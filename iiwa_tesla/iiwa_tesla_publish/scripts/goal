@@ -1,0 +1,6 @@
+#! /usr/bin/env python
+
+import rospy
+from iiwa_msgs.msg import JointPosition
+
+# set the new goal

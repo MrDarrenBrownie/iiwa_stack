@@ -1,59 +1,87 @@
-#! /usr/bin/python3
+#! /usr/bin/env python
 
 import rospy
 from iiwa_msgs.msg import JointPosition
+from iiwa_msgs.msg import CartesianPose
+from iiwa_tesla_msgs import Signal
+from iiwa_tesla_srv import Signal
+from iiwa_tesla_srv import DemandNewGoal
 from math import pi
 
-def movement():
-    rospy.init_node('publish_movement', anonymous=True)
-    pub = rospy.Publisher('/iiwa/command/JointPosition', JointPosition, queue_size=1)
-    r = rospy.Rate(50)
-    
-    # home position 
-    
-    # 0 0 0 0 0 0 0
-    
-    while not rospy.is_shutdown():
+
+class movement:
+
+    def __init__(self):
+        rospy.init_node('publish_movement', anonymous=True)
+        self.publisher = rospy.Publisher('/iiwa/command/JointPosition', JointPosition, queue_size=1)
+        self.pose_subscriber = rospy.Subscriber('iiwa/JointPosition', JointPosition, self.pose_callback)
+        self.cartesian_subscriber = rospy.Subscriber('iiwa/CartesianPose', CartesianPose, self.dist_to_goal)
+        # signal and goal better as a service
+        self.demand_new_goal = rospy.ServiceProxy('demand_new_goal', DemandNewGoal)
+
+        self.rate = rospy.Rate(50)
+
+        self.pose = JointPosition()
+
+        self.home_pose = JointPosition()
+        self.home_pose.position.a1 = 0.0
+        self.home_pose.position.a2 = 0.0
+        self.home_pose.position.a3 = 0.0
+        self.home_pose.position.a4 = 0.0
+        self.home_pose.position.a5 = 0.0
+        self.home_pose.position.a6 = 0.0
+        self.home_pose.position.a7 = 0.0
+
+        self.current_pose = JointPosition()
+        self.goal_pose = JointPosition()
+        # default goal_pose = home_pose
+        self.goal_pose = self.home_pose
+        self.n_goal = 0
         
-        while pub.get_num_connections() <1:
+        self.threshold = 0.1
+
+    def pose_callback(self, joint_pose):
+        self.current_pose = joint_pose
+        self.dist_to_goal()
+        
+    def dist_to_goal(self):
+        if self.goal - self.current_pose > self.threshold:
             pass
-        
-        # position1
-        
-        message = JointPosition()
-        message.position.a1 = 0.0
-        message.position.a2 = 0.0
-        message.position.a3 = 0.0
-        message.position.a4 = 0.0
-        message.position.a5 = 0.0 
-        message.position.a6 = 1.5
-        message.position.a7 = 0.0
-        
-        while #difference between start and goal is greater than threshold: 
-            pub.publish(message)
-            r.sleep()
-            
-            # call service to calculate the difference
-            if service_return == True:
-                break
-            else:
+        else:
+            self.goal = self.demand_new_goal(self.n_goal)
+            self.n_goal += 1
+            # does subscriber wait until callback is finished?
+
+
+    def signal_received(self, data):
+        # if signal is received, then 
+        # get the location, where the signal was received
+        # stop ongoing movement
+        # store the curent position
+        # start hi-res scan routine at signal_received location
+        return True
+
+    def set_new_goal(self, goal):
+        self.goal_pose = goal
+        self.goal_is_set = True
+
+    def move(self):
+        print('start move')       
+        while not rospy.is_shutdown():
+            # wait until subscriber is connected
+            while self.publisher.get_num_connections() < 1:
                 pass
-            
-        # position2
-        
-        message.position.a6 = -1.5
-        
-        while #difference between start and goal is greater than threshold:
-            pub.publish(message)
-            r.sleep()
-            
-        
-        # ...
-        
-    print('published')
+
+            new_pose = self.goal_pose
+            self.publisher.publish(new_pose)
+
+            self.rate.sleep()
+
 
 if __name__ == '__main__':
     try:
-        movement()
+        print('start programm')
+        new_movement = movement()
+        new_movement.move()
     except rospy.ROSInterruptException:
         pass
