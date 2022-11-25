@@ -1,0 +1,9 @@
+<launch>
+
+  <group ns="tesla">
+  
+    <node name="small_movement" pkg="iiwa_tesla_publish" type="publish_movement" output="screen"/>
+  
+  </group>
+  
+</launch>

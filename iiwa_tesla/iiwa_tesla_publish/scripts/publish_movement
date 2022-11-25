@@ -1,0 +1,59 @@
+#! /usr/bin/python3
+
+import rospy
+from iiwa_msgs.msg import JointPosition
+from math import pi
+
+def movement():
+    rospy.init_node('publish_movement', anonymous=True)
+    pub = rospy.Publisher('/iiwa/command/JointPosition', JointPosition, queue_size=1)
+    r = rospy.Rate(50)
+    
+    # home position 
+    
+    # 0 0 0 0 0 0 0
+    
+    while not rospy.is_shutdown():
+        
+        while pub.get_num_connections() <1:
+            pass
+        
+        # position1
+        
+        message = JointPosition()
+        message.position.a1 = 0.0
+        message.position.a2 = 0.0
+        message.position.a3 = 0.0
+        message.position.a4 = 0.0
+        message.position.a5 = 0.0 
+        message.position.a6 = 1.5
+        message.position.a7 = 0.0
+        
+        while #difference between start and goal is greater than threshold: 
+            pub.publish(message)
+            r.sleep()
+            
+            # call service to calculate the difference
+            if service_return == True:
+                break
+            else:
+                pass
+            
+        # position2
+        
+        message.position.a6 = -1.5
+        
+        while #difference between start and goal is greater than threshold:
+            pub.publish(message)
+            r.sleep()
+            
+        
+        # ...
+        
+    print('published')
+
+if __name__ == '__main__':
+    try:
+        movement()
+    except rospy.ROSInterruptException:
+        pass

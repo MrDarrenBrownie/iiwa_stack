@@ -1,0 +1,15 @@
+#! /usr/bin/python3
+
+import rospy
+import geometry_msgs.msg
+import iiwa_msgs.msg
+from std_msgs.msg import String
+
+demo_test_publisher = rospy.Publisher('/test/test_publish', String, queue_size=10)
+rospy.init_node('test_publisher', anonymous=True)
+r = rospy.Rate(10)
+message = 'I send text'
+
+while not rospy.is_shutdown():
+    demo_test_publisher.publish(message)
+    r.sleep()

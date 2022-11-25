@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="iiwa14_camera" >
+
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find iiwa_tesla_description)/urdf/materials.xacro" />
+  <!--Import the lbr iiwa macro -->
+  <xacro:include filename="$(find iiwa_tesla_description)/urdf/iiwa14.xacro"/>
+  
+  <xacro:arg name="hardware_interface" default="PositionJointInterface"/>
+  <xacro:arg name="robot_name" default="iiwa"/>
+  <xacro:arg name="origin_xyz" default="0 0 0"/>
+  <xacro:arg name="origin_rpy" default="0 0 0"/>
+  
+  <!-- Fix to world just for testing -->
+  <link name="world"/>
+  
+  <!-- Gazebo world -->
+  <gazebo reference="world">
+    <static>true</static>
+  </gazebo>
+  
+  <!--iiwa-->
+  <xacro:iiwa14 hardware_interface="$(arg hardware_interface)" robot_name="$(arg robot_name)" parent="world">
+    <origin xyz="$(arg origin_xyz)" rpy="$(arg origin_rpy)"/>
+  </xacro:iiwa14>
+  
+  <!-- camera properties -->
+  <!-- link offset 10cm -->
+  <property name="camera_mass" value="0.250"/>
+  <property name="camera_joint_offset" value="0.00 0.00 0.00"/>
+  <property name="camera_link_offset" value="0.00 0.00 0.10"/>
+  
+  <joint name="camera_joint" type="fixed">
+    <parent link="iiwa_link_ee"/>
+    <child link ="camera_link"/>
+    <origin xyz="0 0 0" rpy="0 ${PI/2.0} 0"/>
+  </joint>
+  
+  <!-- geometry of the camera -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://iiwa_tesla_description/meshes/iiwa14/visual/camera.stl"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://iiwa_tesla_description/meshes/iiwa14/visual/camera.stl"/>
+      </geometry>
+      <material name="Grey"/>
+    </collision>
+  </link>
+  
+  <!-- dummy joint at the end of camera to attach frames -->
+  <joint name="camera_tip_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_link_ee"/>
+    <origin xyz="0 0 0.10" rpy="0 0 0"/>
+  </joint>
+  
+  <!-- TCP frame -->
+  <link name="camera_link_ee"/>
+          
+</robot>

@@ -1,0 +1,13 @@
+#! /usr/bin/python3
+
+
+import rospy
+from std_msgs.msg import String
+
+def callback(data):
+    rospy.loginfo('I heard '+data.data)
+
+demo_test_listener = rospy.Subscriber('iiwa/test/JointPosition', String, callback)
+rospy.init_node('test_listener', anonymous=True)
+
+rospy.spin()
