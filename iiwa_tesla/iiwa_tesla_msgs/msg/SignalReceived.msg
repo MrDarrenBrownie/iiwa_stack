@@ -1,0 +1,1 @@
+bool signal_received

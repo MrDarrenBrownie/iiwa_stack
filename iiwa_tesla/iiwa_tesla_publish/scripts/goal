@@ -2,5 +2,59 @@
 
 import rospy
 from iiwa_msgs.msg import JointPosition
+from iiwa_tesla_msgs.srv import NewGoal, NewGoalResponse
 
-# set the new goal
+pose1 = JointPosition()
+pose1.position.a1 = 0.0
+pose1.position.a2 = 0.0
+pose1.position.a3 = 0.0
+pose1.position.a4 = 0.0
+pose1.position.a5 = 1.5
+pose1.position.a6 = 1.5
+pose1.position.a7 = 0.0
+
+pose2 = JointPosition()
+pose2.position.a1 = 0.0
+pose2.position.a2 = 0.0
+pose2.position.a3 = 0.0
+pose2.position.a4 = 0.0
+pose2.position.a5 = -1.5
+pose2.position.a6 = 1.5
+pose2.position.a7 = 0.0
+
+pose3 = JointPosition()
+pose3.position.a1 = 0.0
+pose3.position.a2 = 0.0
+pose3.position.a3 = 0.0
+pose3.position.a4 = 0.0
+pose3.position.a5 = -1.5
+pose3.position.a6 = -1.5
+pose3.position.a7 = 0.0
+
+pose4 = JointPosition()
+pose4.position.a1 = 0.0
+pose4.position.a2 = 0.0
+pose4.position.a3 = 0.0
+pose4.position.a4 = 0.0
+pose4.position.a5 = 1.5
+pose4.position.a6 = -1.5
+pose4.position.a7 = 0.0
+
+def handle_new_goal(req):
+    if req.n_goals % 4 == 0:
+        print('goal1 requested')
+        return NewGoalResponse(pose1)
+    elif req.n_goals % 4 == 1:
+        print('goal2 requested')
+        return NewGoalResponse(pose2)
+    elif req.n_goals % 4 == 2:
+        print('goal3 requested')
+        return NewGoalResponse(pose3)
+    elif req.n_goals % 4 == 3:
+        print('goal4 requested')
+        return NewGoalResponse(pose4)
+
+rospy.init_node('SetNewGoal', anonymous=True)
+s = rospy.Service('NewGoal', NewGoal, handle_new_goal)
+print('goal server launched')
+rospy.spin()
