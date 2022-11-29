@@ -8,26 +8,16 @@ from iiwa_tesla_msgs.srv import Signal
 from iiwa_tesla_msgs.srv import NewGoal
 import math
 
+def test_callback(data):
+    print(data.position)
+
 class movement:
 
     def __init__(self):
-        rospy.init_node('publish_movement', anonymous=True)
-        self.publisher = rospy.Publisher('/iiwa/command/JointPosition', JointPosition, queue_size=1)
-        self.pose_subscriber = rospy.Subscriber('iiwa/JointPosition', JointPosition, self.pose_callback)
-        self.cartesian_subscriber = rospy.Subscriber('iiwa/CartesianPose', CartesianPose, self.dist_to_goal)
-        print('publisher and subscriber initialized')
-        rospy.spin()
-
-        # service to get a new goal
-        rospy.wait_for_service('NewGoal')
-        self.demand_new_goal = rospy.ServiceProxy('NewGoal', NewGoal)
-        print('service initialized')
-
+        
         # TODO write service or subscriber for "INTERRUPT" command
 
         # TODO after "INTERRUPT" call service that performs detail motion
-
-        self.rate = rospy.Rate(50)
 
         self.pose = JointPosition()
         self.cartesian = CartesianPose()
@@ -57,9 +47,25 @@ class movement:
 
         self.threshold = 0.1
 
-        # end initialization process with running in idle mode
-        self.idle()
+        rospy.init_node('publish_movement', anonymous=True)
+        self.rate = rospy.Rate(50)
 
+        self.publisher = rospy.Publisher('/iiwa/command/JointPosition', JointPosition, queue_size=1)
+        rospy.Subscriber('iiwa/state/JointPosition', JointPosition, test_callback)
+        #self.cartesian_subscriber = rospy.Subscriber('iiwa/state/CartesianPose', CartesianPose, self.dist_to_goal)
+        print('publisher and subscriber initialized')
+
+        # service to get a new goal
+        rospy.wait_for_service('NewGoal')
+        self.demand_new_goal = rospy.ServiceProxy('NewGoal', NewGoal)
+        print('service initialized')
+
+        rospy.spin()
+
+        # end initialization process with running in idle mode
+        # self.idle()
+
+'''
     def dist_to_goal(self):
         print('calc dist to goal')
         return math.sqrt(
@@ -106,7 +112,7 @@ class movement:
 
     def idle(self):
         print('idle')
-        while not rospy.get_param('/tesla/routine/routine_running'):
+        while not rospy.is_shutdown() and not rospy.get_param('/tesla/routine/routine_running'):
             pass
         # after param routine running is "true", continue with move()
         self.move()
@@ -114,7 +120,7 @@ class movement:
 
     def move(self):
         print('start move')       
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and rospy.get_param('/tesla/routine/routine_running'):
             self.wait_for_subscribers()
 
             print('start moving')
@@ -122,7 +128,10 @@ class movement:
             self.publisher.publish(new_pose)
 
             self.rate.sleep()
+        # after move() is finished (aka either rospy is shutdown or 'routine_running' is "false") go back to idle
+        # self.idle()
 
+'''
 
 if __name__ == '__main__':
     try:

@@ -163,6 +163,8 @@ catkin_install_python(PROGRAMS
   scripts/test_publisher
   scripts/test_listener
   scripts/publish_movement
+  scripts/main_command
+  scripts/goal
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

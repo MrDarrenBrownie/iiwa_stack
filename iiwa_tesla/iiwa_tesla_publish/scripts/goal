@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 
 import rospy
-from iiwa_msgs.msg import JointPosition
-from iiwa_tesla_msgs.srv import NewGoal, NewGoalResponse
+from iiwa_msgs.msg import JointPosition, CartesianPose
+from iiwa_tesla_msgs.srv import NewGoalCartesian, NewGoalCartesianResponse, NewGoalJoint, NewGoalJointResponse
+from iiwa_tesla_msgs.msg import goal_cart, goal_joint
 
 pose1 = JointPosition()
 pose1.position.a1 = 0.0
@@ -40,21 +41,78 @@ pose4.position.a5 = 1.5
 pose4.position.a6 = -1.5
 pose4.position.a7 = 0.0
 
+'''
+
+cart1 = goal_cart()
+cart1.x = 2.0
+cart1.y = 2.0
+cart1.z = 2.0
+
+cart2 = goal_cart()
+cart2.x = 2.0
+cart2.y = 2.0
+cart2.z = 2.0
+
+cart3=goal_cart()
+cart3.x = 2.0
+cart3.y = 2.0
+cart3.z = 2.0
+
+cart4 = goal_cart()
+cart4.x = 2.0
+cart4.y = 2.0
+cart4.z = 2.0
+'''
+
 def handle_new_goal(req):
-    if req.n_goals % 4 == 0:
-        print('goal1 requested')
-        return NewGoalResponse(pose1)
-    elif req.n_goals % 4 == 1:
-        print('goal2 requested')
-        return NewGoalResponse(pose2)
-    elif req.n_goals % 4 == 2:
-        print('goal3 requested')
-        return NewGoalResponse(pose3)
-    elif req.n_goals % 4 == 3:
-        print('goal4 requested')
-        return NewGoalResponse(pose4)
+    #goal_asked = req.goal_asked
+
+    if req.goal_asked % 4 == 0:
+        print('position 1')
+        return NewGoalJointResponse(
+            pose1.position.a1,
+            pose1.position.a2,
+            pose1.position.a3,
+            pose1.position.a4,
+            pose1.position.a5,
+            pose1.position.a6,
+            pose1.position.a7,
+            req.goal_asked)
+    elif req.goal_asked % 4 == 1:
+        print('position 2')
+        return NewGoalJointResponse(
+            pose2.position.a1,
+            pose2.position.a2,
+            pose2.position.a3,
+            pose2.position.a4,
+            pose2.position.a5,
+            pose2.position.a6,
+            pose2.position.a7,
+            req.goal_asked)
+    elif req.goal_asked % 4 == 2:
+        print('position 3')
+        return NewGoalJointResponse(
+            pose3.position.a1,
+            pose3.position.a2,
+            pose3.position.a3,
+            pose3.position.a4,
+            pose3.position.a5,
+            pose3.position.a6,
+            pose3.position.a7,
+            req.goal_asked)
+    elif req.goal_asked % 4 == 3:
+        print('position 4')
+        return NewGoalJointResponse(
+            pose4.position.a1,
+            pose4.position.a2,
+            pose4.position.a3,
+            pose4.position.a4,
+            pose4.position.a5,
+            pose4.position.a6,
+            pose4.position.a7,
+            req.goal_asked)
 
 rospy.init_node('SetNewGoal', anonymous=True)
-s = rospy.Service('NewGoal', NewGoal, handle_new_goal)
+s = rospy.Service('NewGoalJoint', NewGoalJoint, handle_new_goal)
 print('goal server launched')
 rospy.spin()

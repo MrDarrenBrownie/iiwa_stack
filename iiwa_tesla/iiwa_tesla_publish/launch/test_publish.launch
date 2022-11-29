@@ -2,11 +2,12 @@
 
   <group ns="tesla">
     <node name="goal" pkg="iiwa_tesla_publish" type="goal" output="screen"/>
-    <node name="routine" pkg="iiwa_tesla_publish" type="publish_movement" output="screen">
+    <node name="distance" pkg="iiwa_tesla_publish" type="main_command" output="screen"/>
+    <!--<node name="routine" pkg="iiwa_tesla_publish" type="publish_movement" output="screen">
       <rosparam param="routine_running">
         false
       </rosparam>
-    </node>  
+    </node>-->  
   </group>
   
 </launch>

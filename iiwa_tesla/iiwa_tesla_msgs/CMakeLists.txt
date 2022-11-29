@@ -51,13 +51,16 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    SignalReceived.msg
+   goal_cart.msg
+   goal_joint.msg
  )
 
 ## Generate services in the 'srv' folder
  add_service_files(
    FILES
    Signal.srv
-   NewGoal.srv
+   NewGoalCartesian.srv
+   NewGoalJoint.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -159,11 +162,11 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
- catkin_install_python(PROGRAMS
-   scripts/goal
-   scripts/publish_movement
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+# catkin_install_python(PROGRAMS
+#   scripts/goal
+#   scripts/publish_movement
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
