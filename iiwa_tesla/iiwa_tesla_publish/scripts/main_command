@@ -2,54 +2,150 @@
 
 import rospy
 from iiwa_msgs.msg import JointPosition, CartesianPose
-from iiwa_tesla_msgs.srv import NewGoalJoint
+from iiwa_tesla_msgs.srv import NewGoalJoint, Signal, HRGoal
+from iiwa_tesla_msgs.msg import InterruptSignal
 import math
 
 class movement():
     def __init__(self):
-            
-        self.goal_flag = False
+        
+        self.main_routine = True
+        self.hi_res_routine = False
+        self.goal_set = False
         self.goal_asked = 0
-        rospy.wait_for_service('/tesla/NewGoalJoint')
-        self.ng = rospy.ServiceProxy('/tesla/NewGoalJoint', NewGoalJoint)
         self.threshold = 0.1
 
-    def callback(self, data):
-        if not self.goal_flag:
-            print('demanding new goal')
-            self.goal_response = self.ng(self.goal_asked)
-            print('goal asked: '+str(self.goal_asked))
-            
-            while publisher.get_num_connections() < 1:
-                print('waiting for subscribers to be connected')
-                 
-            return self.move(self.goal_response)
-        else:
-            # print('goal is stil set. no new goal required')
-            return self.get_distance(data, self.goal_response)
+        self.signal_position = JointPosition()
+        self.last_position = JointPosition()
+        
+        # self.main_goal
+        # self.hr_goal
 
-    def get_distance(self, data, goal_response):
+        # waiting for services and subscribers to be connected
+        rospy.wait_for_service('/tesla/NewGoalJoint')
+        self.ng = rospy.ServiceProxy('/tesla/NewGoalJoint', NewGoalJoint)
+        rospy.wait_for_service('/tesla/HRGoal')
+        self.nhrg = rospy.ServiceProxy('/tesla/HRGoal', HRGoal)
+
+
+    def main_callback(self, data):
+        self.current_joint_position = data
+
+        # CASE 1: main routine and no goal set -> get new goal and demand move
+        if self.main_routine and not self.goal_set:
+            print('demanding new goal')
+            self.main_goal = self.ng(self.goal_asked)
+            print('goal asked: '+str(self.goal_asked))
+
+            return self.move(self.main_goal)
+        
+        # CASE 2: main routine and goal set -> get distance to goal and see if we reached the goal
+        elif self.main_routine and self.goal_set:
+            # print('main goal is still set. no new main goal required')
+            return self.get_distance(self.main_goal)
+
+        # CASE 3: hi res routine is activated -> we want to query a new hi res goal
+        elif self.hi_res_routine and not self.goal_set:
+            print('hi res scan activated')
+            print('demanding new hrgoal')
+
+            self.hr_goal = self.nhrg(
+                self.signal_position.position.a1,
+                self.signal_position.position.a2,
+                self.signal_position.position.a3,
+                self.signal_position.position.a4,
+                self.signal_position.position.a5,
+                self.signal_position.position.a6,
+                self.signal_position.position.a7,
+                self.last_position.position.a1,
+                self.last_position.position.a2,
+                self.last_position.position.a3,
+                self.last_position.position.a4,
+                self.last_position.position.a5,
+                self.last_position.position.a6,
+                self.last_position.position.a7
+            )
+
+            if self.hr_goal.signal_response_code == 0:
+                print('high res routine started')
+            elif self.hr_goal.signal_response_code == 1:
+                print('high res routine still running')
+            elif self.hr_goal.signal_response_code == 2:
+                print('high res routine finished')
+                self.hi_res_routine = False
+                self.main_routine = True
+
+            return self.move(self.hr_goal)
+
+        # CASE 4: hi res routine is activated, and goal is set -> get distance to goal and see if we reached the goal
+        elif self.hi_res_routine and self.goal_set:
+            # print('hr goal is still set. no new hr goal required')
+            return self.get_distance(self.hr_goal)
+
+        # CASE 5: hi res routine AND main routine are activated -> ERROR
+        elif self.main_routine and self.hi_res_routine:
+            print('ERROR')
+
+    def signal_callback(self, data):
+        if data.signal_received and self.main_routine:
+            print('i received a signal')
+            self.main_routine = False
+            self.hi_res_routine = True
+            self.goal_set = False
+
+            self.signal_position.position.a1 = data.a1
+            self.signal_position.position.a2 = data.a2
+            self.signal_position.position.a3 = data.a3
+            self.signal_position.position.a4 = data.a4
+            self.signal_position.position.a5 = data.a5
+            self.signal_position.position.a6 = data.a6
+            self.signal_position.position.a7 = data.a7
+
+            #self.signal_position = signal_position
+
+            self.last_position.position.a1 = self.current_joint_position.position.a1
+            self.last_position.position.a2 = self.current_joint_position.position.a2
+            self.last_position.position.a3 = self.current_joint_position.position.a3
+            self.last_position.position.a4 = self.current_joint_position.position.a4
+            self.last_position.position.a5 = self.current_joint_position.position.a5
+            self.last_position.position.a6 = self.current_joint_position.position.a6
+            self.last_position.position.a7 = self.current_joint_position.position.a7
+
+            #self.last_position = last_position
+
+        else:
+            pass
+
+            
+
+    def get_distance(self, goal):
         distance = math.sqrt(
-                (data.position.a1 - goal_response.a1)**2
-                + (data.position.a2 - goal_response.a2)**2
-                + (data.position.a3 - goal_response.a3)**2
-                + (data.position.a4 - goal_response.a4)**2
-                + (data.position.a5 - goal_response.a5)**2
-                + (data.position.a6 - goal_response.a6)**2
-                + (data.position.a7 - goal_response.a7)**2)
+                (self.current_joint_position.position.a1 - goal.a1)**2
+                + (self.current_joint_position.position.a2 - goal.a2)**2
+                + (self.current_joint_position.position.a3 - goal.a3)**2
+                + (self.current_joint_position.position.a4 - goal.a4)**2
+                + (self.current_joint_position.position.a5 - goal.a5)**2
+                + (self.current_joint_position.position.a6 - goal.a6)**2
+                + (self.current_joint_position.position.a7 - goal.a7)**2)
         #print(distance)
 
         if distance < self.threshold:
-            print('verify goal asked: '+str(self.goal_asked))
-            print('goal reached: '+str(self.goal_response.goal_reached))
-            if self.goal_asked == self.goal_response.goal_reached:
-                self.goal_asked += 1
-                self.goal_flag = False
+            if self.hi_res_routine:
+                print('distance close. goal_set = False')
+                self.goal_set = False
             else:
-                self.goal_flag = True
+                print('verify goal asked: '+str(self.goal_asked))
+                print('goal reached: '+str(goal.goal_reached))
+                if self.goal_asked == goal.goal_reached:
+                    self.goal_asked += 1
+                    self.goal_set = False
+                else:
+                    self.goal_set = True
+                #return True
         else:
-            # print('distance to goal to large. still moving')
+            #print('distance to goal to large. still moving')
             pass
+            #return False
 
 
     def idle(self):
@@ -59,23 +155,28 @@ class movement():
 
     def listener(self):
         rospy.init_node('test_sub')
-        rospy.Subscriber('/iiwa/state/JointPosition', JointPosition, self.callback)
+        rospy.Subscriber('/iiwa/state/JointPosition', JointPosition, self.main_callback)
+        rospy.Subscriber('/tesla/Crack', InterruptSignal, self.signal_callback)
         rospy.spin()
 
-    def move(self, goal_response):
-        self.goal_flag = True
+
+    def move(self, goal_command):
+        self.goal_set = True
+        while publisher.get_num_connections() < 1:
+            print('waiting for subscribers to be connected to published topic')
+
         if not rospy.is_shutdown():
             
-            goal = JointPosition()
-            goal.position.a1 = goal_response.a1
-            goal.position.a2 = goal_response.a2
-            goal.position.a3 = goal_response.a3
-            goal.position.a4 = goal_response.a4
-            goal.position.a5 = goal_response.a5
-            goal.position.a6 = goal_response.a6
-            goal.position.a7 = goal_response.a7
+            new_goal = JointPosition()
+            new_goal.position.a1 = goal_command.a1
+            new_goal.position.a2 = goal_command.a2
+            new_goal.position.a3 = goal_command.a3
+            new_goal.position.a4 = goal_command.a4
+            new_goal.position.a5 = goal_command.a5
+            new_goal.position.a6 = goal_command.a6
+            new_goal.position.a7 = goal_command.a7
 
-            publisher.publish(goal)
+            publisher.publish(new_goal)
             print('start moving')
         else:
             print('error')

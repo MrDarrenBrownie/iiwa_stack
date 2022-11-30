@@ -1,0 +1,105 @@
+#! /usr/bin/env python3
+
+import rospy
+from iiwa_msgs.msg import JointPosition
+from iiwa_tesla_msgs.srv import HRGoal, HRGoalResponse
+
+signal_position = JointPosition()
+last_position = JointPosition()
+pose1 = JointPosition()
+pose2 = JointPosition()
+
+response_code = 0
+pose_counter = 0
+
+class hi_res_goal_handler():
+    def handle_new_hr_goal(req, response_code=response_code):
+        if response_code == 0:
+
+            signal_position.position.a1 = req.a1
+            signal_position.position.a2 = req.a2
+            signal_position.position.a3 = req.a3
+            signal_position.position.a4 = req.a4
+            signal_position.position.a5 = req.a5
+            signal_position.position.a6 = req.a6
+            signal_position.position.a7 = req.a7
+
+            last_position.position.a1 = req.b1
+            last_position.position.a2 = req.b2
+            last_position.position.a3 = req.b3
+            last_position.position.a4 = req.b4
+            last_position.position.a5 = req.b5
+            last_position.position.a6 = req.b6
+            last_position.position.a7 = req.b7
+
+            pose1 = signal_position
+            pose2 = signal_position
+
+            response_code_out = response_code
+            response_code += 1
+
+            return HRGoalResponse(
+                response_code_out,
+                signal_position.position.a1,
+                signal_position.position.a2,
+                signal_position.position.a3,
+                signal_position.position.a4,
+                signal_position.position.a5,
+                signal_position.position.a6,
+                signal_position.position.a7
+                )
+
+        elif response_code == 1:
+            response_code_out = response_code
+            # do some relative movement to signal_position 
+            if pose_counter == 0:
+
+                pose1.position.a1 = 1.0
+
+                return HRGoalResponse(
+                    response_code_out,
+                    pose1.position.a1,
+                    pose1.position.a2,
+                    pose1.position.a3,
+                    pose1.position.a4,
+                    pose1.position.a5,
+                    pose1.position.a6,
+                    pose1.position.a7
+                )
+            elif pose_counter == 1:
+
+                pose2.position.a1 = -1.0
+
+                response_code += 1
+
+                return HRGoalResponse(
+                    response_code_out,
+                    pose2.position.a1,
+                    pose2.position.a2,
+                    pose2.position.a3,
+                    pose2.position.a4,
+                    pose2.position.a5,
+                    pose2.position.a6,
+                    pose2.position.a7
+                )
+            
+        elif response_code == 2:
+            response_code_out = response_code
+            response_code = 0
+
+            return HRGoalResponse(
+                response_code_out,
+                last_position.position.a1,
+                last_position.position.a2,
+                last_position.position.a3,
+                last_position.position.a4,
+                last_position.position.a5,
+                last_position.position.a6,
+                last_position.position.a7            
+            )   
+
+
+rospy.init_node('SetNewHRGoal', anonymous=True)
+s = rospy.Service('HRGoal', HRGoal, handle_new_hr_goal)
+print('high-res-goal server launched')
+rospy.spin()

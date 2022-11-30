@@ -165,6 +165,8 @@ catkin_install_python(PROGRAMS
   scripts/publish_movement
   scripts/main_command
   scripts/goal
+  scripts/signal
+  scripts/hr_goal
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

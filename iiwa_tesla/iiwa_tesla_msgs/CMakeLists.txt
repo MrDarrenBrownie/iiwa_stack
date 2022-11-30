@@ -50,7 +50,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   SignalReceived.msg
+   InterruptSignal.msg
    goal_cart.msg
    goal_joint.msg
  )
@@ -61,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
    Signal.srv
    NewGoalCartesian.srv
    NewGoalJoint.srv
+   HRGoal.srv
  )
 
 ## Generate actions in the 'action' folder
