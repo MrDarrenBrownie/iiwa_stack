@@ -75,6 +75,15 @@ class movement():
                 self.hi_res_routine = False
                 self.main_routine = True
 
+                self.main_goal.goal_reached = self.last_position_goal_reached
+                self.main_goal.a1 = self.last_position.position.a1
+                self.main_goal.a2 = self.last_position.position.a2
+                self.main_goal.a3 = self.last_position.position.a3
+                self.main_goal.a4 = self.last_position.position.a4
+                self.main_goal.a5 = self.last_position.position.a5
+                self.main_goal.a6 = self.last_position.position.a6
+                self.main_goal.a7 = self.last_position.position.a7
+
             return self.move(self.hr_goal)
 
         # CASE 4: hi res routine is activated, and goal is set -> get distance to goal and see if we reached the goal
@@ -92,6 +101,8 @@ class movement():
             self.main_routine = False
             self.hi_res_routine = True
             self.goal_set = False
+
+            self.last_position_goal_reached = self.main_goal.goal_reached
 
             self.signal_position.position.a1 = data.a1
             self.signal_position.position.a2 = data.a2
@@ -112,6 +123,8 @@ class movement():
             self.last_position.position.a7 = self.current_joint_position.position.a7
 
             #self.last_position = last_position
+
+            rospy.set_param('/tesla/signal/crack_signal', False)
 
         else:
             pass
@@ -163,7 +176,10 @@ class movement():
     def move(self, goal_command):
         self.goal_set = True
         while publisher.get_num_connections() < 1:
-            print('waiting for subscribers to be connected to published topic')
+            print_counter = 0
+            if print_counter == 0:
+                print_counter += 1
+                print('waiting for subscribers to be connected to published topic')
 
         if not rospy.is_shutdown():
             
