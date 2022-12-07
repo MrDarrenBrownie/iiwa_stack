@@ -1,14 +1,17 @@
 <?xml version="1.0"?>
 <launch>
-    
+    <!-- specify the planning pipeline -->
+    <arg name="pipeline" default="ompl" />
     <!-- By default, we start RViz -->
     <arg name="rviz" default="true" />
     <!-- By default, we do not start a database (it can be large) -->
     <arg name="db" default="false" />
     
+
+    
     <!-- hardware_interface to use : PositionJointInterface, EffortJointInterface, VelocityJointInterface. -->
     <arg name="hardware_interface" default="PositionJointInterface"/>
-    <!-- name of the iiwa to use, useful in case of multiple robots. Every robot is gonna have its nodees/topics under a namespace with the same name. -->
+    <!-- name of the iiwa to use, useful in case of multiple robots. Every robot is gonna have its nodes/topics under a namespace with the same name. -->
     <arg name="robot_name" default="iiwa"/>
     <!-- Model of the iiwa to use : iiwa7, iiwa14 -->
     <arg name="model" default="iiwa14"/>
