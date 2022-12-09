@@ -162,14 +162,14 @@ Visualization Manager:
         Query Goal State: true
         Query Start State: false
         Show Workspace: false
-        Start State Alpha: 0.10000000149011612
+        Start State Alpha: 0.1
         Start State Color: 0; 255; 0
       Planning Scene Topic: move_group/monitored_planning_scene
       Robot Description: robot_description
       Scene Geometry:
         Scene Alpha: 1
         Scene Color: 50; 230; 50
-        Scene Display Time: 0.009999999776482582
+        Scene Display Time: 0.1
         Show Scene Geometry: true
         Voxel Coloring: Z-Axis
         Voxel Rendering: Occupied Voxels

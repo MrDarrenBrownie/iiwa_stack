@@ -1,0 +1,16 @@
+<launch>
+  <arg name="move_group" default="iiwa_arm" />
+  <arg name="ee_link" default="iiwa14_link_eef" />
+  <arg name="ros_rate" default="0.1" />
+
+  <include file="$(find iiwa_moveit)/launch/moveit_planning_execution.launch">
+    <arg name="sim" value="false" />
+  </include>
+
+  <node ns="iiwa" name="commandRobotMoveit" pkg="iiwa_tesla_publish" type="moveit" respawn="false" output="screen">
+    <param name="move_group" value="$(arg move_group)" />
+    <param name="ee_link" value="$(arg ee_link)" />
+    <param name="ros_rate" value="$(arg ros_rate)" />
+  </node>
+
+</launch>
