@@ -1,24 +1,21 @@
 <launch>
-    <arg name="move_group" default="" />
-    <arg name="ee_link" default="" />
-    <arg name="ros_rate" default="" />
+    <arg name="move_group" default="manipulator" />
+    <arg name="ee_link" default="iiwa14_link_eef" />
+    <arg name="ros_rate" default="0.1" />
 
     <arg name="robot_name" default="iiwa" />
     <arg name="model" default="iiwa14" />
+
+    <arg name="hardware_interface" default ="PositionJointInterface" />
 
     <arg name="sim" default="false" />
     <arg name="rviz" default="true" />
     <arg name="rviz_config" default="true" />
 
-    <arg name="hardware_interface" default ="PositionJointInterface" />
-    <arg name="controllers" default="joint_state_controller pos_joint_trajectory_controller" />
-    <arg name="joint_state_frequency" default="100" />
-    <arg name="robot_state_frequency" default="100" />
-
     <!--
         Remapping (moveit_planning_execution.launch)
     -->
-    <remap from="/$(arg hardware_interface)_trajectory_controller/follow_joint_trajectory" to="/$(arg robot_name)/$(arg hardware_controller)_trajectory_controller/follow_joint_trajectory" />
+    <remap from="/$(arg hardware_interface)_trajectory_controller/follow_joint_trajectory" to="/$(arg robot_name)/$(arg hardware_interface)_trajectory_controller/follow_joint_trajectory" />
     <remap from="robot_description" to="/$(arg robot_name)/robot_description" />
     <remap from="/get_planning_scene" to="/$(arg robot_name)/get_planning_scene" />
 
@@ -26,6 +23,9 @@
     <group ns="$(arg robot_name)">
             
         <!-- iiwa_control -->
+            <arg name="controllers" value="joint_state_controller $(arg hardware_interface)_trajectory_controller" />
+            <arg name="joint_state_frequency" default="100" />
+            <arg name="robot_state_frequency" default="100" />
             <rosparam file="$(find iiwa_control)/config/iiwa_control.yaml" command="load" />
             <!-- iiwa_control.yaml file VALUES ARE NOT CORRECT! -->
             <param name="/$(arg robot_name)/joint_state_controller/publish_rate" value="$(arg joint_state_frequency)" />
@@ -37,15 +37,15 @@
             
         <!-- iiwa_hw -->
             <rosparam file="$(find iiwa_hw)/config/joint_names.yaml" command="load" />
-            <param name="interface" value="$(arg hardware_intertface" />
+            <param name="interface" value="$(arg hardware_interface)" />
             <node name="iiwa_hw" pkg="iiwa_hw" type="iiwa_hw-bin" respawn="false" output="screen" />
             
         <!-- move_group -->
             <!-- planning_context -->
-                <arg name="load_robot_description" default="true" />
-                <arg name="robot_description" default ="robot_description" />
+                <!--<arg name="load_robot_description" default="true" />-->
+                <arg name="robot_description" default="robot_description" />
 
-                <!-- iiwa14_upload-->
+                <!-- iiwa14_upload -->
                     <arg name="origin_xyz" default="'0 0 0'" />
                     <arg name="origin_rpy" default="'0 0 0'" />
                     <param name="robot_description" command="$(find xacro)/xacro '$(find iiwa_description)/urdf/iiwa14.urdf.xacro' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg robot_name) origin_xyz:=$(arg origin_xyz) origin_rpy:=$(arg origin_rpy)" />
@@ -61,20 +61,24 @@
                 <arg name="allow_trajectory_execution" default="true" />
                 <arg name="max_safe_path_cost" default="1" />
                 <arg name="jiggle_fraction" default="0.05" />
-                <arg name="publish_monitored_movement" default="true" />
-
+                <arg name="publish_monitored_planning_scene" default="true" />
+                
             <!-- namespace move_group -->
             <group ns="move_group">
                 <!-- oompl planning pipeline -->
-                    <arg name="planning_plugin" default="ompl_interface/OMPLPlanner" /> 
+                    <arg name="planning_plugin" value="ompl_interface/OMPLPlanner" /> 
                     <!-- todo: check xml list format -->
-                    <arg name="planning_adapters" value="default_planner_request_adapters/AddTimeParameterization default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints" />
+                    <arg name="planning_adapters" value="default_planner_request_adapters/AddTimeParameterization
+				       default_planner_request_adapters/FixWorkspaceBounds
+				       default_planner_request_adapters/FixStartStateBounds
+				       default_planner_request_adapters/FixStartStateCollision
+				       default_planner_request_adapters/FixStartStatePathConstraints" />
                     <arg name="start_state_max_bounds_error" default="0.1" />
-                    <param name="planning_plugin" default="$(arg planning_plugin)" />
-                    <param name="request_adapters" default="$(arg planning_adapters)" />
-                    <param name="start_state_max_bounds_error" default="$(arg start_state_max_bounds_error)" />
-                    <rosparam file="$(find iiwa_moveit)/config/ompl_planning.yaml" />
-                
+                    <param name="planning_plugin" value="$(arg planning_plugin)" />
+                    <param name="request_adapters" value="$(arg planning_adapters)" />
+                    <param name="start_state_max_bounds_error" value="$(arg start_state_max_bounds_error)" />
+                    <rosparam file="$(find iiwa_moveit)/config/ompl_planning.yaml" command="load" />
+                    
                 <!-- trajectory execution -->
                     <arg name="moveit_manage_controllers" default="true" />
                     <param name="moveit_manage_controllers" value="$(arg moveit_manage_controllers)" />
@@ -84,32 +88,45 @@
                 <!-- controller_manager -->
                     <arg name="moveit_controller_manager" default="moveit_simple_controller_manager/MoveItSimpleControllerManager" />
                     <param name="moveit_controller_manager" value="$(arg moveit_controller_manager)" />
-                    <rosparam file="$(find iiwa_moveit)/config/$(arg hardware_interface)_controllers.yaml" />
+                    <rosparam file="$(find iiwa_moveit)/config/$(arg hardware_interface)_controllers.yaml" command="load" />
                 
                 <!-- sensor functionality -->
                     <arg name="moveit_sensor_manager" default="iiwa" />
-                    <rosparam name="octomap_resolution" type="double" value="0.25" />
-                    <rosparam name="max_range" type="double" value="5.0" />
+                    <param name="octomap_resolution" type="double" value="0.025" />
+                    <param name="max_range" type="double" value="5.0" />
                     <!-- iiwa_sensor_manager.launch file empty-->
-
-
-                <node name="move_group" pkg="moveit_ros_move_group" type="move_group" respawn="false" output="screen" args="$(arg command_args)">
-                    <env name="DISPLAY" value="$(optenv DISPLAY :0)" />
-                    <param name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)" />
-                    <param name="max_safe_path_cost" value="$(arg max_safe_path_cost)" />
-                    <param name="jiggle_fraction" value="$(arg jiggle_fraction)" />
-                    <!-- xml liste s.o. -->
-                    <param name="capabilities" value="move_group/MoveGroupCartesianPathService move_group/MoveGroupExecuteTrajectoryAction move_group/MoveGroupKinematicsService move_group/MoveGroupMoveAction move_group/MoveGroupPickPlaceAction move_group/MoveGroupPlanService move_group/MoveGroupQueryPlannersService move_group/MoveGroupStateValidationService move_group/MoveGroupGetPlanningSceneService move_group/ClearOctomapService" />
-                    <param name="planning_scene_monitor/publish_planning_scene" value="$(arg publish_monitored_planning_scene)" />
-                    <param name="planning_scene_monitor/publish_geometry_updates" value="$(arg publish_monitored_planning_scene)" />
-                    <param name="planning_scene_monitor/publish_state_updates" value="$(arg publish_monitored_planning_scene)" />
-                    <param name="planning_scene_monitor/publish_transforms_updates" value="$(arg publish_monitored_planning_scene)" />
-                </node>
             </group>
+
+            <arg name="move_group_command_args" default="" />
+            <node name="move_group" pkg="moveit_ros_move_group" type="move_group" respawn="false" output="screen" args="$(arg move_group_command_args)">
+            
+                <env name="DISPLAY" value="$(optenv DISPLAY :0)" />
+                <param name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)" />
+                <param name="max_safe_path_cost" value="$(arg max_safe_path_cost)" />
+                <param name="jiggle_fraction" value="$(arg jiggle_fraction)" />
+                <!-- xml liste s.o. -->
+                <param name="capabilities" value="move_group/MoveGroupCartesianPathService
+                    move_group/MoveGroupExecuteTrajectoryAction
+                    move_group/MoveGroupKinematicsService
+                    move_group/MoveGroupMoveAction
+                    move_group/MoveGroupPickPlaceAction
+                    move_group/MoveGroupPlanService
+                    move_group/MoveGroupQueryPlannersService
+                    move_group/MoveGroupStateValidationService
+                    move_group/MoveGroupGetPlanningSceneService
+                    move_group/ClearOctomapService
+                    " />
+                <param name="planning_scene_monitor/publish_planning_scene" value="$(arg publish_monitored_planning_scene)" />
+                <param name="planning_scene_monitor/publish_geometry_updates" value="$(arg publish_monitored_planning_scene)" />
+                <param name="planning_scene_monitor/publish_state_updates" value="$(arg publish_monitored_planning_scene)" />
+                <param name="planning_scene_monitor/publish_transforms_updates" value="$(arg publish_monitored_planning_scene)" />
+                
+            </node>
+            
         <!-- rviz -->
-            <arg name="command_args" value="-d $(find iiiwa_moveit)/launch/moveit.rviz" />
-            <node name="$(anon rviiz)" pkg="rviz" type="rviz" respawn="false" output="screen" args="$(arg command_args)">
-                <rosparam file="$(find iiwa_moveit)/config/kinematics.yaml" />
+            <arg name="rviz_command_args" value="-d $(find iiwa_moveit)/launch/moveit.rviz" />
+            <node name="$(anon rviz)" pkg="rviz" type="rviz" respawn="false" output="screen" args="$(arg rviz_command_args)">
+                <rosparam file="$(find iiwa_moveit)/config/kinematics.yaml" command="load" />
             </node>
 
     </group>

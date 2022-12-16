@@ -167,7 +167,7 @@ catkin_install_python(PROGRAMS
   scripts/goal
   scripts/signal
   scripts/hr_goal
-  scripts/moveit
+  scripts/move_route
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

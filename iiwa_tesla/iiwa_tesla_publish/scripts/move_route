@@ -1,4 +1,4 @@
-#!/usr/bin python3
+#!/usr/bin/python3
 
 import sys
 import rospy
@@ -6,10 +6,12 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 from std_msgs.msg import String
+from math import pi
 
 
 moveit_commander.roscpp_initialize(sys.argv)
-rospy.init_node('iiwa_tesla_moveit_python_demo')
+rospy.init_node('iiwa_tesla_move_route')
+rate = rospy.Rate(1)
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface()
@@ -31,24 +33,16 @@ move_group.set_start_state_to_current_state()
 move_group.set_joint_value_target(home_joint)
 move_group.go(wait=True)
 
+home_joint_2 = home_joint
+home_joint_2[1] = 14.0 *(pi/180)
+home_joint_2[3] = -75.0 *(pi/180)
+home_joint_2[5] = 38.0 *(pi/180)
+
+move_group.set_start_state_to_current_state()
+move_group.set_joint_value_target(home_joint_2)
+move_group.go(wait=True)
+
 while not rospy.is_shutdown():
-    '''
-    command_cartesian_position = move_group.get_current_pose(eef)
-    command_cartesian_position.pose.position.x += 1e-6
-    command_cartesian_position.pose.position.y += 0.010000
-    command_cartesian_position.pose.position.z -= 0.010000
-    command_cartesian_position.pose.orientation.x += 1e-6
-    command_cartesian_position.pose.orientation.y += 1e-6
-    command_cartesian_position.pose.orientation.z += 1e-6
-    command_cartesian_position.pose.orientation.w = 1.000000
-
-    move_group.set_start_state_to_current_state()
-
-    move_group.set_pose_target(command_cartesian_position, eef)
-
-    success = move_group.go(wait=True)
-    move_group.stop()
-    move_group.clear_pose_targets()
-    '''
+    print('waiting for new goal...')
+    rate.sleep()
     pass
-
