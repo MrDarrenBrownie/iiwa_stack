@@ -5,13 +5,16 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
+import sensor_msgs.msg
 from std_msgs.msg import String
-from math import pi
+from math import pi, dist, fabs, cos
+from moveit_commander.conversions import pose_to_list
 
 
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
 rate = rospy.Rate(1)
+tolerance = 0.01
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface()
@@ -20,68 +23,139 @@ move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-
 move_group.set_planning_time(1)
 move_group.set_planner_id('RRTConnectkConfigDefault')
 eef = 'iiwa_link_ee'
 move_group.set_end_effector_link(eef)
 
-current_joint = move_group.get_current_joint_values()
-home_joint = [0.0 for x in range(7)]
+home_joint = [0.00 for x in range(7)]
+print(home_joint)
 
-move_group.set_start_state_to_current_state()
-move_group.set_joint_value_target(home_joint)
-move_group.go(wait=True)
-
-home_joint_2 = home_joint
+home_joint_2 = home_joint[:]
 home_joint_2[1] = 14.0 *(pi/180)
 home_joint_2[3] = -75.0 *(pi/180)
 home_joint_2[5] = 38.0 *(pi/180)
+print(home_joint_2)
+print(home_joint)
 
-move_group.set_start_state_to_current_state()
-move_group.set_joint_value_target(home_joint_2)
-move_group.go(wait=True)
+home_cartesian = geometry_msgs.msg.Pose()
 
-point0 = move_group.get_current_pose(eef)
+home_cartesian.position.x = 0.6
+home_cartesian.position.y = 0.0
+home_cartesian.position.z = 0.7
+home_cartesian.orientation.x = 0.000001
+home_cartesian.orientation.y = 0.900001
+home_cartesian.orientation.z = 0.000001
+home_cartesian.orientation.w = 0.400001
+
+position1 = home_cartesian
+position1.position.x + 0.1
+position1.position.y + 0.2
+route1 = [
+    position1,
+    position1.position.x + 0.1,
+    position1.position.y + 0.1,
+    position1.position.x - 0.1
+]
+position2 = home_cartesian
+position2.position.x + 0.3
+position2.position.y + 0.2
+route2 = [
+    position2,
+    position2.position.x + 0.1,
+    position2.position.y + 0.1,
+    position2.position.x - 0.1
+
+]
+position3 = home_cartesian
+position3.position.x + 0.3
+position3.position.y - 0.2
+route3 = [
+    position3,
+    position3.position.x + 0.1,
+    position3.position.y + 0.1,
+    position3.position.x - 0.1
+]
+position4 = home_cartesian
+position4.position.x + 0.1
+position4.position.y - 0.2
+route4 = [
+    position4,
+    position4.position.x + 0.1,
+    position4.position.y + 0.1,
+    position4.position.x - 0.1
+]
+position5 = home_cartesian
+position5.position.x + 0.2
+route5 = [
+    position5,
+    position5.position.x + 0.1,
+    position5.position.y + 0.1,
+    position5.position.x - 0.1
+]
+
+routes = {'route1':route1, 'route2':route2, 'route3':route3, 'route4':route4, 'route5':route5, 'home_joint1':home_joint, 'home_joint2':home_joint_2}
 
 # points out of loop in list
 # compute_cartesian_path uses a waypoints list to go through ;)
+# loop through list and call methods like move() clear(),...
 
 
-while not rospy.is_shutdown():
-    print('waiting for new goal...')
+def all_close(goal, actual, tolerance=tolerance):
+    """
+    Convenience method for testing if the values in two lists are within a tolerance of each other.
+    For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
+    between the identical orientations q and -q is calculated correctly).
+    @param: goal       A list of floats, a Pose or a PoseStamped
+    @param: actual     A list of floats, a Pose or a PoseStamped
+    @param: tolerance  A float
+    @returns: bool
+    """
+    if type(goal) is list:
+        for index in range(len(goal)):
+            if abs(actual[index] - goal[index]) > tolerance:
+                return False
 
-    # loop through list and call methods like move() clear(),...
+    elif type(goal) is geometry_msgs.msg.PoseStamped:
+        return all_close(goal.pose, actual.pose, tolerance)
 
-    point1 = point0
-    point1.Pose.position.x += 50
-    move_group.set_start_state_to_current_state()
-    move_group.set_pose_target(point1, eef)
-    # move_group.compute_cartesian_path()
-    move_group.go(wait=True)
-    move_group.clear_pose_targets()
+    elif type(goal) is geometry_msgs.msg.Pose:
+        x0, y0, z0, qx0, qy0, qz0, qw0 = pose_to_list(actual)
+        x1, y1, z1, qx1, qy1, qz1, qw1 = pose_to_list(goal)
+        # Euclidean distance
+        d = dist((x1, y1, z1), (x0, y0, z0))
+        # phi = angle between orientations
+        cos_phi_half = fabs(qx0 * qx1 + qy0 * qy1 + qz0 * qz1 + qw0 * qw1)
+        return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
 
-    point2 = point1
-    point2.Pose.position.y += 50
-    move_group.set_start_state_to_current_state()
-    move_group.set_pose_target(point2, eef)
-    # move_group.compute_cartesian_path()
-    move_group.go(wait=True)
-    move_group.clear_pose_targets()
+    return True
 
-    point3 = point2
-    point3.Pose.position.x -= 50
-    move_group.set_start_state_to_current_state()
-    move_group.set_pose_target(point3, eef)
-    # move_group.compute_cartesian_path()
-    move_group.go(wait=True)
-    move_group.clear_pose_targets()
+def is_goal_reached(goal):
+    while not all_close(goal, move_group.get_current_joint_values()):
+        print('wait for movement to be finished')
 
-    move_group.set_start_state_to_current_state()
-    move_group.set_pose_target(point0, eef)
-    # move_group.compute_cartesian_path()
-    move_group.go(wait=True)
-    move_group.clear_pose_targets()
+def move(route):
+    if not type(routes[route][0]) is geometry_msgs.msg.Pose:
+        move_group.set_start_state_to_current_state()
+        move_group.set_joint_value_target(routes[route])
+        success = move_group.go()
+        # move_group.stop()
+        is_goal_reached(routes[route])
 
-    rate.sleep()
-    pass
+    else:
+
+        while not rospy.is_shutdown():
+
+            for waypoint in routes[route]:
+                move_group.set_start_state_to_current_state()
+                move_group.set_pose_target(waypoint)
+                move_group.go()
+                is_goal_reached(waypoint)
+                move_group.clear_pose_target(eef)
+
+
+move('home_joint1')
+move('home_joint2')
+move('route1')
+print(move_group.get_current_pose(eef))
+print(move_group.get_current_rpy(eef))
