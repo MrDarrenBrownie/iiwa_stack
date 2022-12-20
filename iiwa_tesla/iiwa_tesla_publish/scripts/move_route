@@ -42,7 +42,46 @@ move_group.set_start_state_to_current_state()
 move_group.set_joint_value_target(home_joint_2)
 move_group.go(wait=True)
 
+point0 = move_group.get_current_pose(eef)
+
+# points out of loop in list
+# compute_cartesian_path uses a waypoints list to go through ;)
+
+
 while not rospy.is_shutdown():
     print('waiting for new goal...')
+
+    # loop through list and call methods like move() clear(),...
+
+    point1 = point0
+    point1.Pose.position.x += 50
+    move_group.set_start_state_to_current_state()
+    move_group.set_pose_target(point1, eef)
+    # move_group.compute_cartesian_path()
+    move_group.go(wait=True)
+    move_group.clear_pose_targets()
+
+    point2 = point1
+    point2.Pose.position.y += 50
+    move_group.set_start_state_to_current_state()
+    move_group.set_pose_target(point2, eef)
+    # move_group.compute_cartesian_path()
+    move_group.go(wait=True)
+    move_group.clear_pose_targets()
+
+    point3 = point2
+    point3.Pose.position.x -= 50
+    move_group.set_start_state_to_current_state()
+    move_group.set_pose_target(point3, eef)
+    # move_group.compute_cartesian_path()
+    move_group.go(wait=True)
+    move_group.clear_pose_targets()
+
+    move_group.set_start_state_to_current_state()
+    move_group.set_pose_target(point0, eef)
+    # move_group.compute_cartesian_path()
+    move_group.go(wait=True)
+    move_group.clear_pose_targets()
+
     rate.sleep()
     pass
