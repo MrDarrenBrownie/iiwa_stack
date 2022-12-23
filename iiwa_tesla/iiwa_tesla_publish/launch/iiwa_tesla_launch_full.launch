@@ -1,5 +1,5 @@
 <launch>
-    <arg name="move_group" default="manipulator" />
+    <arg name="move_group" default="arm_w_eef" />
     <arg name="ee_link" default="iiwa14_link_eef" />
     <arg name="ros_rate" default="0.1" />
 
@@ -9,7 +9,7 @@
     <arg name="hardware_interface" default ="PositionJointInterface" />
 
     <arg name="sim" default="false" />
-    <arg name="rviz" default="false" />
+    <arg name="rviz" default="true" />
     <arg name="rviz_config" default="true" />
 
     <!--

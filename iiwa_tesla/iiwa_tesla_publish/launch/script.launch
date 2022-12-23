@@ -1,0 +1,5 @@
+<launch>
+    <arg name="move" default="true" />
+    <arg name="respawn" default="false" />
+    <node if="$(arg move)" ns="iiwa" name="iiwa_tesla_move_route" pkg="iiwa_tesla_publish" type="move_route" respawn="$(arg respawn)" respawn_delay="3" output="screen" />
+</launch>

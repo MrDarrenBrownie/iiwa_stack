@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import copy
 import rospy
 import moveit_commander
 import moveit_msgs.msg
@@ -18,88 +19,68 @@ tolerance = 0.01
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface()
-group_name = 'manipulator'
+group_name = 'arm_w_eef'
 move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
 move_group.set_planning_time(1)
 move_group.set_planner_id('RRTConnectkConfigDefault')
-eef = 'iiwa_link_ee'
+eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
-home_joint = [0.00 for x in range(7)]
-print(home_joint)
+home_joint = [0.1 for x in range(7)]
 
-home_joint_2 = home_joint[:]
-home_joint_2[1] = 14.0 *(pi/180)
+home_joint_2 = [0.0 for x in range(7)]
+# home_joint_2[1] = 14.0 *(pi/180)
 home_joint_2[3] = -75.0 *(pi/180)
 home_joint_2[5] = 38.0 *(pi/180)
-print(home_joint_2)
-print(home_joint)
 
 home_cartesian = geometry_msgs.msg.Pose()
 
-home_cartesian.position.x = 0.6
-home_cartesian.position.y = 0.0
-home_cartesian.position.z = 0.7
-home_cartesian.orientation.x = 0.000001
-home_cartesian.orientation.y = 0.900001
-home_cartesian.orientation.z = 0.000001
-home_cartesian.orientation.w = 0.400001
+routes = {'home_joint1':home_joint, 'home_joint2':home_joint_2}
 
-position1 = home_cartesian
-position1.position.x + 0.1
-position1.position.y + 0.2
-route1 = [
-    position1,
-    position1.position.x + 0.1,
-    position1.position.y + 0.1,
-    position1.position.x - 0.1
-]
-position2 = home_cartesian
-position2.position.x + 0.3
-position2.position.y + 0.2
-route2 = [
-    position2,
-    position2.position.x + 0.1,
-    position2.position.y + 0.1,
-    position2.position.x - 0.1
+def relative_movement_from_start(last_start_pose):
+    
+    start_pose = copy.deepcopy(last_start_pose)
 
-]
-position3 = home_cartesian
-position3.position.x + 0.3
-position3.position.y - 0.2
-route3 = [
-    position3,
-    position3.position.x + 0.1,
-    position3.position.y + 0.1,
-    position3.position.x - 0.1
-]
-position4 = home_cartesian
-position4.position.x + 0.1
-position4.position.y - 0.2
-route4 = [
-    position4,
-    position4.position.x + 0.1,
-    position4.position.y + 0.1,
-    position4.position.x - 0.1
-]
-position5 = home_cartesian
-position5.position.x + 0.2
-route5 = [
-    position5,
-    position5.position.x + 0.1,
-    position5.position.y + 0.1,
-    position5.position.x - 0.1
-]
+    rel_x = 0.1
+    rel_y = 0.1
+    
+    init_1_x = -0.1
+    init_1_y = 0.1
+    init_2_x = 0.05
+    init_2_y = init_1_y
+    init_3_x = init_2_x
+    init_3_y = - (init_1_y + rel_y)
+    init_4_x = init_1_x
+    init_4_y = - (init_1_y + rel_y)
 
-routes = {'route1':route1, 'route2':route2, 'route3':route3, 'route4':route4, 'route5':route5, 'home_joint1':home_joint, 'home_joint2':home_joint_2}
+    init_x = [init_1_x, init_2_x, init_3_x, init_4_x]
+    init_y = [init_1_y, init_2_y, init_3_y, init_4_y]
 
-# points out of loop in list
-# compute_cartesian_path uses a waypoints list to go through ;)
-# loop through list and call methods like move() clear(),...
+    for pos, (ix,iy) in enumerate(zip(init_x, init_y)):
+        route_n = []
 
+        position_init = copy.deepcopy(start_pose)
+        position_init.position.x += ix
+        position_init.position.y += iy
+        route_n.append(position_init)
+
+        position2 = copy.deepcopy(position_init)
+        position2.position.x += rel_x
+        route_n.append(position2)
+   
+        position3 = copy.deepcopy(position2)
+        position3.position.y += rel_y
+        route_n.append(position3)
+
+        position4 = copy.deepcopy(position3)
+        position4.position.x -= rel_x
+        route_n.append(position4)
+        routes['route'+str(pos)] = route_n
+
+    return routes
 
 def all_close(goal, actual, tolerance=tolerance):
     """
@@ -131,31 +112,41 @@ def all_close(goal, actual, tolerance=tolerance):
     return True
 
 def is_goal_reached(goal):
-    while not all_close(goal, move_group.get_current_joint_values()):
+    if type(goal) is list:
         print('wait for movement to be finished')
+        while not all_close(goal, move_group.get_current_joint_values()):
+            pass
+            # print('wait for movement to be finished')
+    elif type(goal) is geometry_msgs.msg.Pose:
+        print('wait for movement to be finished')
+        while not all_close(goal, move_group.get_current_pose().pose):
+            pass
+            # print('wait for movement to be finished')
 
 def move(route):
     if not type(routes[route][0]) is geometry_msgs.msg.Pose:
         move_group.set_start_state_to_current_state()
         move_group.set_joint_value_target(routes[route])
         success = move_group.go()
-        # move_group.stop()
         is_goal_reached(routes[route])
 
     else:
-
-        while not rospy.is_shutdown():
-
-            for waypoint in routes[route]:
-                move_group.set_start_state_to_current_state()
-                move_group.set_pose_target(waypoint)
-                move_group.go()
-                is_goal_reached(waypoint)
-                move_group.clear_pose_target(eef)
+        for waypoint in routes[route]:
+            move_group.set_start_state_to_current_state()
+            move_group.set_pose_target(waypoint)
+            move_group.go()
+            is_goal_reached(waypoint)
+            move_group.clear_pose_target(eef)
 
 
 move('home_joint1')
+print('home1')
 move('home_joint2')
-move('route1')
-print(move_group.get_current_pose(eef))
-print(move_group.get_current_rpy(eef))
+print('home2')
+start_relative_movement = move_group.get_current_pose()
+print('startpoint for relative movement')
+print(start_relative_movement)
+relative_movement_from_start(start_relative_movement.pose)
+
+while not rospy.is_shutdown():
+    move('route0')

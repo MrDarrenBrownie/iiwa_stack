@@ -1,6 +1,15 @@
 <launch>
+    <arg name="move_group" default="arm_w_eef" />
+    <arg name="sim" default="false" />
+    <arg name="rviz" default="true" />
+    <arg name="move" default="true" />
+    <arg name="respawn" default="false" />
 
-    <include file="$(find iiwa_tesla_publish)/launch/iiwa_tesla_launch_prototype.launch" />
-    <node ns="iiwa" name="iiwa_tesla_move_route" pkg="iiwa_tesla_publish" type="move_route" respawn="false" output="screen" />
+    <include file="$(find iiwa_tesla_publish)/launch/iiwa_tesla_launch_full.launch">
+        <arg name="move_group" value="$(arg move_group)" />
+        <arg name="sim" value="$(arg sim)" />
+        <arg name="rviz" value="$(arg rviz)" />
+    </include>
+    <node if="$(arg move)" ns="iiwa" name="iiwa_tesla_move_route" pkg="iiwa_tesla_publish" type="move_route" respawn="$(arg respawn)" respawn_delay="10" output="screen" />
   
 </launch>
