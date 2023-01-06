@@ -2,6 +2,7 @@
 
 import sys
 import copy
+import json
 import rospy
 import moveit_commander
 import moveit_msgs.msg
@@ -11,38 +12,87 @@ from std_msgs.msg import String
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
 
-
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
 rate = rospy.Rate(1)
 tolerance = 0.01
 
 robot = moveit_commander.RobotCommander()
-scene = moveit_commander.PlanningSceneInterface()
+scene = moveit_commander.PlanningSceneInterface(synchronous=True)
 group_name = 'arm_w_eef'
 move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-move_group.set_planning_time(1)
+move_group.set_planning_time(5)
 move_group.set_planner_id('RRTConnectkConfigDefault')
 eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
-home_joint = [0.1 for x in range(7)]
+def wait_for_state_update(box_is_known=False, box_is_attached=False, timeout=10):
+        start = rospy.get_time()
+        seconds = rospy.get_time()
+        while (seconds - start < timeout) and not rospy.is_shutdown():
+            # Test if the box is in attached objects
+            attached_objects = scene.get_attached_objects([box_name])
+            is_attached = len(attached_objects.keys()) > 0
 
-home_joint_2 = [0.0 for x in range(7)]
-# home_joint_2[1] = 14.0 *(pi/180)
-home_joint_2[3] = -75.0 *(pi/180)
-home_joint_2[5] = 38.0 *(pi/180)
+            # Test if the box is in the scene.
+            # Note that attaching the box will remove it from known_objects
+            is_known = box_name in scene.get_known_object_names()
+            
+            # Test if we are in the expected state
+            if (box_is_attached == is_attached) and (box_is_known == is_known):
+                return True
 
-home_cartesian = geometry_msgs.msg.Pose()
+            # Sleep so that we give other threads time on the processor
+            rospy.sleep(0.1)
+            seconds = rospy.get_time()
 
-routes = {'home_joint1':home_joint, 'home_joint2':home_joint_2}
+        return False
 
-def relative_movement_from_start(last_start_pose):
+
+# rospy.sleep(10)
+box_pose = geometry_msgs.msg.PoseStamped()
+box_pose.header.frame_id = 'world'
+box_pose.pose.position.x = 0.09
+box_pose.pose.position.y = -0.75
+box_pose.pose.position.z = 0.8
+box_name = 'box_tesla_part'
+scene.add_box(box_name, box_pose, size=(1.0, 1.50, 0.15))
+
+if not wait_for_state_update(box_is_known=True):
+    print('timeout')
+else:
+    print('box attached')
+
+'''
+tesla_part_pose = geometry_msgs.msg()
+tesla_part_pose.Pose.position.x = 0.5
+tesla_part_pose.Pose.position.y = 0.0
+tesla_part_pose.Pose.position.z = 0.5
+scene.add_mesh('model_y_rear_axle', pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu.stl', size=(0.001,0.001,0.001))
+'''
+
+file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/frames_wheel_house_left_0.json')
+frames_wheel_house_left = json.load(file)
+file.close()
+
+def home_pose_singularity_safe():
+    return [0.1 for x in range(7)]
+
+def home_pose_straight():
+    return [0.0 for x in range(7)]
+
+def start_position_middle():
+    joint_pose = [0.0 for x in range(7)]
+    joint_pose[3] = -75.0 *(pi/180)
+    joint_pose[5] = 38.0 *(pi/180)
+    return joint_pose
+
+def relative_movement_from_start(start_pose, routes):
     
-    start_pose = copy.deepcopy(last_start_pose)
+    start_pose = copy.deepcopy(start_pose)
 
     rel_x = 0.1
     rel_y = 0.1
@@ -82,7 +132,74 @@ def relative_movement_from_start(last_start_pose):
 
     return routes
 
-def all_close(goal, actual, tolerance=tolerance):
+
+def arms_middle(routes):
+    
+    # orientation in quaternions: [x, y, z, w]
+    orientation_left = [0.65, 0.75, 0.0, 0.015]
+    orientation_middle = [0.0, 0.75, 0.0, 0.5]
+    orientation_right = [1.0, 0.0, 0.0, 0.027]
+    
+    init_left_arm = geometry_msgs.msg.Pose()
+    init_left_arm.position.x = 0.0
+    init_left_arm.position.y = 0.3
+    init_left_arm.position.z = 0.8
+    init_left_arm.orientation.x = orientation_left[0]
+    init_left_arm.orientation.y = orientation_left[1]
+    init_left_arm.orientation.z = orientation_left[2]
+    init_left_arm.orientation.w = orientation_left[3]
+
+    end_left_arm = geometry_msgs.msg.Pose()
+    end_left_arm.position.x = 0.15
+    end_left_arm.position.y = 0.3
+    end_left_arm.position.z = 0.8
+    end_left_arm.orientation.x = orientation_left[0]
+    end_left_arm.orientation.y = orientation_left[1]
+    end_left_arm.orientation.z = orientation_left[2]
+    end_left_arm.orientation.w = orientation_left[3]
+
+    init_left_middle = geometry_msgs.msg.Pose()
+    init_left_middle.position.x = 0.15
+    init_left_middle.position.y = 0.3
+    init_left_middle.position.z = 0.8
+    init_left_middle.orientation.x = orientation_middle[0]
+    init_left_middle.orientation.y = orientation_middle[1]
+    init_left_middle.orientation.z = orientation_middle[2]
+    init_left_middle.orientation.w = orientation_middle[3]
+
+    init_right_middle = geometry_msgs.msg.Pose()
+    init_right_middle.position.x = 0.15
+    init_right_middle.position.y = -0.3
+    init_right_middle.position.z = 0.8
+    init_right_middle.orientation.x = orientation_middle[0]
+    init_right_middle.orientation.y = orientation_middle[1]
+    init_right_middle.orientation.z = orientation_middle[2]
+    init_right_middle.orientation.w = orientation_middle[3]
+
+    init_right_arm = geometry_msgs.msg.Pose()
+    init_right_arm.position.x = 0.0
+    init_right_arm.position.y = -0.3
+    init_right_arm.position.z = 0.8
+    init_right_arm.orientation.x = orientation_right[0]
+    init_right_arm.orientation.y = orientation_right[1]
+    init_right_arm.orientation.z = orientation_right[2]
+    init_right_arm.orientation.w = orientation_right[3]
+
+    end_right_arm = geometry_msgs.msg.Pose()
+    end_right_arm.position.x = 0.15
+    end_right_arm.position.y = -0.3
+    end_right_arm.position.z = 0.8
+    end_right_arm.orientation.x = orientation_right[0]
+    end_right_arm.orientation.y = orientation_right[1]
+    end_right_arm.orientation.z = orientation_right[2]
+    end_right_arm.orientation.w = orientation_right[3]
+
+    routes['arms_middle'] = [init_left_arm, end_left_arm, init_left_middle, init_right_middle, end_right_arm, init_right_arm]
+    return routes
+
+
+
+def all_close(goal, actual, tolerance):
     """
     Convenience method for testing if the values in two lists are within a tolerance of each other.
     For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
@@ -111,42 +228,72 @@ def all_close(goal, actual, tolerance=tolerance):
 
     return True
 
-def is_goal_reached(goal):
+def is_goal_reached(move_group, goal, tolerance):
     if type(goal) is list:
         print('wait for movement to be finished')
-        while not all_close(goal, move_group.get_current_joint_values()):
+        while not all_close(goal, move_group.get_current_joint_values(), tolerance):
             pass
             # print('wait for movement to be finished')
     elif type(goal) is geometry_msgs.msg.Pose:
         print('wait for movement to be finished')
-        while not all_close(goal, move_group.get_current_pose().pose):
+        while not all_close(goal, move_group.get_current_pose().pose, tolerance):
             pass
-            # print('wait for movement to be finished')
+            print('wait for movement to be finished')
+
+
+home_joint_0 = home_pose_singularity_safe()
+
+home_joint_1 = home_pose_straight()
+
+home_joint_2 = start_position_middle()
+
+home_cartesian = geometry_msgs.msg.Pose()
+
+routes = {'home_joint_0':home_joint_0, 'home_joint_1':home_joint_1, 'home_joint2':home_joint_2}
+
+wheel_house_left = [geometry_msgs.msg.Pose() for item in frames_wheel_house_left.keys()]
+
+for point, key in zip(wheel_house_left, frames_wheel_house_left.keys()):
+    point.position.x = frames_wheel_house_left[key]['pose']['position']['x']-1
+    point.position.y = frames_wheel_house_left[key]['pose']['position']['y']-1
+    point.position.z = frames_wheel_house_left[key]['pose']['position']['z']
+    point.orientation.x = frames_wheel_house_left[key]['pose']['orientation']['x']
+    point.orientation.y = frames_wheel_house_left[key]['pose']['orientation']['y']
+    point.orientation.z = frames_wheel_house_left[key]['pose']['orientation']['z']
+    point.orientation.w = frames_wheel_house_left[key]['pose']['orientation']['w']
+
+routes['wheel_house_left'] = wheel_house_left
 
 def move(route):
     if not type(routes[route][0]) is geometry_msgs.msg.Pose:
         move_group.set_start_state_to_current_state()
         move_group.set_joint_value_target(routes[route])
         success = move_group.go()
-        is_goal_reached(routes[route])
+        is_goal_reached(move_group, routes[route], tolerance)
 
     else:
-        for waypoint in routes[route]:
+        for n, waypoint in enumerate(routes[route]):
             move_group.set_start_state_to_current_state()
             move_group.set_pose_target(waypoint)
             move_group.go()
-            is_goal_reached(waypoint)
+            print(n)
+            is_goal_reached(move_group, waypoint, tolerance)
             move_group.clear_pose_target(eef)
 
+move('home_joint_1')
+print('home joint 1')
+#move('home_joint_0')
+#print('home0')
+#move('home_joint_2')
+#print('home2')
+start_position = move_group.get_current_pose()
+print(start_position)
 
-move('home_joint1')
-print('home1')
-move('home_joint2')
-print('home2')
-start_relative_movement = move_group.get_current_pose()
-print('startpoint for relative movement')
-print(start_relative_movement)
-relative_movement_from_start(start_relative_movement.pose)
+# relative_movement_from_start(start_position.pose, routes)
+# arms_middle(routes)
 
 while not rospy.is_shutdown():
-    move('route0')
+    move_group.set_max_velocity_scaling_factor(0.01)
+    # input('start moving')
+    # move('wheel_house_left')
+    pass

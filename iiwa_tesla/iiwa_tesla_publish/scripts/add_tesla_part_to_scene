@@ -1,0 +1,21 @@
+#!/usr/bin/python3
+
+import rospy
+from moveit_msgs.msg import PlanningScene, AttachedCollisionObject
+
+update_scene = rospy.Publisher('/iiwa/move_group/monitored_planning_scene', PlanningScene)
+rospy.init_node('update_scene')
+
+new_scene = PlanningScene()
+tesla_part = AttachedCollisionObject()
+
+tesla_part.link_name = 'world'
+tesla_part.object.header.frame_id = 'world'
+tesla_part.object.id = 'part'
+
+
+
+new_scene.world.collision_objects.
+new_scene.is_diff = True
+
+update_scene.publish(new_scene)

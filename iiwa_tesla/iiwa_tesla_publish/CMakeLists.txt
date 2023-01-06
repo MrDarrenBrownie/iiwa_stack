@@ -168,6 +168,11 @@ catkin_install_python(PROGRAMS
   scripts/signal
   scripts/hr_goal
   scripts/move_route
+<<<<<<< HEAD
+  scripts/gather_frames
+  scripts/route_lib.py
+=======
+>>>>>>> parent of 43bfddf... start implementing routes as external module
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

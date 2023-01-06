@@ -77,3 +77,6 @@ Status API Training Shop Blog About
 /config
 *.kdev_include_paths
 *.orig
+
+iiwa_tesla/iiwa_tesla_publish/src/1487454-03-B_neu.stp
+iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu.stl

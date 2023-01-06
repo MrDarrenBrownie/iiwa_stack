@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+
+import ids_peak as ids
+
+ids.Library.Initialize()
+
+print(ids.Library.Version())

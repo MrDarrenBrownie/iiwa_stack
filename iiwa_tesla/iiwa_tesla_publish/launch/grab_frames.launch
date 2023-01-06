@@ -1,0 +1,5 @@
+<launch>
+
+    <node ns="iiwa" name="frame_grabber" pkg="iiwa_tesla_publish" type="gather_frames" output="screen" />
+
+</launch>

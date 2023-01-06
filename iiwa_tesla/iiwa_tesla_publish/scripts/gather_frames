@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+
+import sys
+import rospy
+from iiwa_msgs.msg import CartesianPose
+import json
+import yaml
+
+frames_wheel_house_left = []
+frames_dict = {}
+
+def msg2json(frames):
+    for frame_number, frame in enumerate(frames):
+        y = yaml.load(str(frame))
+        frames_dict['frame_'+str(frame_number)] = y
+        
+    file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_left.json', 'w')
+    json.dump(frames_dict, file, indent=4)
+    file.close()
+        
+
+def callback(data):
+    
+    key = sys.stdin.read(1)
+
+    if key == ' ':
+        print(data.poseStamped)
+        return frames_wheel_house_left.append(data.poseStamped)
+    elif key == 's':
+        return msg2json(frames_wheel_house_left)
+    elif key == 'p':
+        return print(data.poseStamped)
+        
+frame_listener = rospy.Subscriber('iiwa/state/CartesianPose', CartesianPose, callback, queue_size=1)
+rospy.init_node('frame_grabber')
+
+rospy.spin()
