@@ -5,6 +5,7 @@
 
     <arg name="robot_name" default="iiwa" />
     <arg name="model" default="iiwa14" />
+    <arg name="w_eef" default="false" />
 
     <arg name="hardware_interface" default ="PositionJointInterface" />
 
@@ -46,11 +47,16 @@
                 <arg name="robot_description" default="robot_description" />
 
                 <!-- iiwa14_upload -->
-                    <arg name="origin_xyz" default="'-1 -1 0'" />
+                    <arg name="origin_xyz" default="'-1.1 -0.5 0'" />
                     <arg name="origin_rpy" default="'0 0 0'" />
-                    <param name="robot_description" command="$(find xacro)/xacro '$(find iiwa_description)/urdf/iiwa14.urdf.xacro' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg robot_name) origin_xyz:=$(arg origin_xyz) origin_rpy:=$(arg origin_rpy)" />
+                    <!-- if robot model is used with eef or not -->
+                    <param if="$(arg w_eef)" name="robot_description" command="$(find xacro)/xacro '$(find iiwa_description)/urdf/iiwa14.urdf.xacro' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg robot_name) origin_xyz:=$(arg origin_xyz) origin_rpy:=$(arg origin_rpy)" />
+                    <param if="$(arg w_eef)" name="robot_description" command="$(find xacro)/xacro '$(find iiwa_description)/urdf/iiwa14_tool.urdf.xacro' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg robot_name) origin_xyz:=$(arg origin_xyz) origin_rpy:=$(arg origin_rpy)" />
 
-                <param name="$(arg robot_description)_semantic" textfile="$(find iiwa_moveit)/config/$(arg model).srdf" />
+                <!-- s.o. -->
+                <param if="$(arg w_eef)" name="$(arg robot_description)_semantic" textfile="$(find iiwa_moveit)/config/$(arg model).srdf" />
+                <param if="$(arg w_eef)" name="$(arg robot_description)_semantic" textfile="$(find iiwa_moveit)/config/$(arg model)_tool.srdf" />
+
                 <group ns="$(arg robot_description)_planning">
                     <rosparam file="$(find iiwa_moveit)/config/joint_limits.yaml" command="load" />
                 </group>

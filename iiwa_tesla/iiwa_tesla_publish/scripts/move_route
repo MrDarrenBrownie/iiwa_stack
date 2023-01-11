@@ -4,6 +4,7 @@ import sys
 import copy
 import json
 import rospy
+import tf.transformations
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
@@ -11,6 +12,8 @@ import sensor_msgs.msg
 from std_msgs.msg import String
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
+
+# INITIALIZE MOVEIT
 
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
@@ -29,54 +32,84 @@ move_group.set_planner_id('RRTConnectkConfigDefault')
 eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
-def wait_for_state_update(box_is_known=False, box_is_attached=False, timeout=10):
+rospy.sleep(5)
+
+
+# ADD OBSTACLE TO SCENE -> TESLA PART
+
+def wait_for_state_update(object_name, object_is_known=False, object_is_attached=False, timeout=10):
         start = rospy.get_time()
         seconds = rospy.get_time()
         while (seconds - start < timeout) and not rospy.is_shutdown():
             # Test if the box is in attached objects
-            attached_objects = scene.get_attached_objects([box_name])
+            attached_objects = scene.get_attached_objects([object_name])
             is_attached = len(attached_objects.keys()) > 0
 
             # Test if the box is in the scene.
             # Note that attaching the box will remove it from known_objects
-            is_known = box_name in scene.get_known_object_names()
+            is_known = object_name in scene.get_known_object_names()
             
             # Test if we are in the expected state
-            if (box_is_attached == is_attached) and (box_is_known == is_known):
+            if (object_is_attached == is_attached) and (object_is_known == is_known):
                 return True
 
             # Sleep so that we give other threads time on the processor
-            rospy.sleep(0.1)
+            rospy.sleep(1)
             seconds = rospy.get_time()
 
         return False
 
+def add_box():
+    box_pose = geometry_msgs.msg.PoseStamped()
+    box_pose.header.frame_id = 'world'
+    box_pose.pose.position.x = 0.09
+    box_pose.pose.position.y = -0.75
+    box_pose.pose.position.z = 0.8
+    box_pose_orientation = tf.transformations.quaternion_from_euler(0,0,0)
+    box_pose.pose.orientation.x = box_pose_orientation[0]
+    box_pose.pose.orientation.y = box_pose_orientation[1]
+    box_pose.pose.orientation.z = box_pose_orientation[2]
+    box_pose.pose.orientation.w = box_pose_orientation[3]
+    box_name = 'box_tesla_part'
+    scene.add_box(box_name, box_pose, size=(1.0, 1.50, 0.15))
+    rospy.sleep(1)
+    if not wait_for_state_update(object_name=box_name, object_is_known=True):
+        return print('timeout')
+    else:
+        return print('box attached')
 
-# rospy.sleep(10)
-box_pose = geometry_msgs.msg.PoseStamped()
-box_pose.header.frame_id = 'world'
-box_pose.pose.position.x = 0.09
-box_pose.pose.position.y = -0.75
-box_pose.pose.position.z = 0.8
-box_name = 'box_tesla_part'
-scene.add_box(box_name, box_pose, size=(1.0, 1.50, 0.15))
+def add_tesla_part():
+    # position transformation because bad cad model
+    tesla_part_pose = geometry_msgs.msg.PoseStamped()
+    tesla_part_pose.header.frame_id = 'world'
+    tesla_part_pose.pose.position.x = 0.25
+    tesla_part_pose.pose.position.y = 3.45
+    tesla_part_pose.pose.position.z = 0.0
+    rotation = tf.transformations.quaternion_from_euler(0,0,-pi/2)
+    tesla_part_pose.pose.orientation.x = rotation[0]
+    tesla_part_pose.pose.orientation.y = rotation[1]
+    tesla_part_pose.pose.orientation.z = rotation[2]
+    tesla_part_pose.pose.orientation.w = rotation[3]
 
-if not wait_for_state_update(box_is_known=True):
-    print('timeout')
-else:
-    print('box attached')
+    tesla_part_name = 'model_y_rear_axle'
+    scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.001,0.001,0.001))
+    rospy.sleep(1)
+    if not wait_for_state_update(object_name=tesla_part_name, object_is_known=True):
+        return print('timeout')
+    else:
+        return print('part attached')
 
-'''
-tesla_part_pose = geometry_msgs.msg()
-tesla_part_pose.Pose.position.x = 0.5
-tesla_part_pose.Pose.position.y = 0.0
-tesla_part_pose.Pose.position.z = 0.5
-scene.add_mesh('model_y_rear_axle', pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu.stl', size=(0.001,0.001,0.001))
-'''
+# add_box()
+add_tesla_part()
 
-file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/frames_wheel_house_left_0.json')
+
+# IMPORT FRAMES FROM JSON FILE CREATED OUTSIDE OF ROS
+
+file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_fromCAD_afterTranslation2.json')
 frames_wheel_house_left = json.load(file)
 file.close()
+
+# FUNCTIONS TO GENERATE FRAMES (probably deprecated)
 
 def home_pose_singularity_safe():
     return [0.1 for x in range(7)]
@@ -131,7 +164,6 @@ def relative_movement_from_start(start_pose, routes):
         routes['route'+str(pos)] = route_n
 
     return routes
-
 
 def arms_middle(routes):
     
@@ -197,8 +229,6 @@ def arms_middle(routes):
     routes['arms_middle'] = [init_left_arm, end_left_arm, init_left_middle, init_right_middle, end_right_arm, init_right_arm]
     return routes
 
-
-
 def all_close(goal, actual, tolerance):
     """
     Convenience method for testing if the values in two lists are within a tolerance of each other.
@@ -241,6 +271,8 @@ def is_goal_reached(move_group, goal, tolerance):
             print('wait for movement to be finished')
 
 
+# INITIALIZE POSITIONS (deprecated in future)
+
 home_joint_0 = home_pose_singularity_safe()
 
 home_joint_1 = home_pose_straight()
@@ -249,26 +281,58 @@ home_joint_2 = start_position_middle()
 
 home_cartesian = geometry_msgs.msg.Pose()
 
+
+# CREATE ROUTES DICTIONARY WHERE ALL ROUTES ARE STORED
+
 routes = {'home_joint_0':home_joint_0, 'home_joint_1':home_joint_1, 'home_joint2':home_joint_2}
 
-wheel_house_left = [geometry_msgs.msg.Pose() for item in frames_wheel_house_left.keys()]
 
-for point, key in zip(wheel_house_left, frames_wheel_house_left.keys()):
-    point.position.x = frames_wheel_house_left[key]['pose']['position']['x']-1
-    point.position.y = frames_wheel_house_left[key]['pose']['position']['y']-1
-    point.position.z = frames_wheel_house_left[key]['pose']['position']['z']
-    point.orientation.x = frames_wheel_house_left[key]['pose']['orientation']['x']
-    point.orientation.y = frames_wheel_house_left[key]['pose']['orientation']['y']
-    point.orientation.z = frames_wheel_house_left[key]['pose']['orientation']['z']
-    point.orientation.w = frames_wheel_house_left[key]['pose']['orientation']['w']
+# ADD CAD IMPORTED FRAMES TO ROUTES DICTIONARY
 
-routes['wheel_house_left'] = wheel_house_left
+def gmtry_msg_from_CADdata(cad_frames_dict):
+    list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
+
+    for point, key in zip(list_of_frames, cad_frames_dict.keys()):
+        point.position.x = frames_wheel_house_left[key]['x']/1000
+        point.position.y = frames_wheel_house_left[key]['y']/1000
+        point.position.z = frames_wheel_house_left[key]['z']/1000
+        
+        # Orientation depending on position of frame -> upper lane, bottom lane,...
+        
+        point.orientation.x = 0.0
+        point.orientation.y = 0.0
+        point.orientation.z = 0.0
+        point.orientation.w = 1.0
+        
+
+    return list_of_frames
+
+routes['wheel_house_left'] = gmtry_msg_from_CADdata(frames_wheel_house_left)
+
+print(routes['wheel_house_left'][0])
+
+def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
+    list_of_frames = [geometry_msgs.msg.Pose() for item in frameGrammer_frames_dict.keys()]
+
+    for point, key in zip(list_of_frames, frameGrammer_frames_dict.keys()):
+        point.position.x = frames_wheel_house_left[key]['pose']['position']['x']-1
+        point.position.y = frames_wheel_house_left[key]['pose']['position']['y']-1
+        point.position.z = frames_wheel_house_left[key]['pose']['position']['z']
+        point.orientation.x = frames_wheel_house_left[key]['pose']['orientation']['x']
+        point.orientation.y = frames_wheel_house_left[key]['pose']['orientation']['y']
+        point.orientation.z = frames_wheel_house_left[key]['pose']['orientation']['z']
+        point.orientation.w = frames_wheel_house_left[key]['pose']['orientation']['w']
+
+    return list_of_frames
+
+
+# MAIN MOVEMENT FUNCTION
 
 def move(route):
     if not type(routes[route][0]) is geometry_msgs.msg.Pose:
         move_group.set_start_state_to_current_state()
         move_group.set_joint_value_target(routes[route])
-        success = move_group.go()
+        move_group.go()
         is_goal_reached(move_group, routes[route], tolerance)
 
     else:
@@ -280,20 +344,22 @@ def move(route):
             is_goal_reached(move_group, waypoint, tolerance)
             move_group.clear_pose_target(eef)
 
-move('home_joint_1')
-print('home joint 1')
-#move('home_joint_0')
-#print('home0')
-#move('home_joint_2')
-#print('home2')
-start_position = move_group.get_current_pose()
-print(start_position)
 
-# relative_movement_from_start(start_position.pose, routes)
-# arms_middle(routes)
+
+
+
+# MAIN LOOP THAT CALLS THE FUNCTIONS
 
 while not rospy.is_shutdown():
     move_group.set_max_velocity_scaling_factor(0.01)
-    # input('start moving')
-    # move('wheel_house_left')
-    pass
+    
+    move('home_joint_0')
+
+    break
+
+
+    # print('home joint 0 (singularity safe)')
+
+    # print(routes['wheel_house_left'][0])
+
+    # pass
