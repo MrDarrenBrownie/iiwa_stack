@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<!-- Here we define the robot, we named it "iiwa14_tool" -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="iiwa14_camera_light_adjustable_eef">
+  
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find iiwa_description)/urdf/materials.xacro" />
+  <!--Import the iiwa14 macro -->
+  <xacro:include filename="$(find iiwa_description)/urdf/iiwa14.xacro"/>
+  
+  <!--  Arguments for the iiwa14 macro  -->
+  <xacro:arg name="hardware_interface" default="PositionJointInterface"/>
+  <xacro:arg name="robot_name" default="iiwa"/>
+  <xacro:arg name="origin_xyz" default="0 0 0" />
+  <xacro:arg name="origin_rpy" default="0 0 0" />
+  
+  <link name="world" />
+
+
+
+  <!-- Here we insert an iiwa14 robot in the scene, it's origin is just on top of the box previously defined. You can use 0,0,0 if you don't have that. -->
+  <xacro:iiwa14 hardware_interface="$(arg hardware_interface)" robot_name="$(arg robot_name)" parent="world">
+    <origin xyz="$(arg origin_xyz)" rpy="$(arg origin_rpy)" />
+  </xacro:iiwa14>
+  
+  <!-- Tool properties -->
+  <xacro:property name="eef_mass" value="0.200" />
+  <xacro:property name="eef_joint_offset" value="0.00 0.00 0.00" />
+  <xacro:property name="eef_link_offset" value="0.00 0.00 0.12" />
+  
+  <!--  Here we define a dummy joint between the tip of the iiwa14 and the base of the tool. 
+  There is no offset between the two, that means the tool is attached at the robot flange. -->
+  <joint name="eef_joint" type="fixed">
+    <parent link="iiwa_link_ee" />
+    <child link = "eef_link" />
+    <origin xyz="${eef_joint_offset}" rpy="0 0 0" />  
+  </joint>
+  
+  <!-- Here we define the geometry of the tool. We designed the tool ourselves, so we have a mesh file that represents it.   
+  Else, one can define it using a geometric representation that approximate it, like a cylinder (see commented lines) -->
+  <link name="eef_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/prod_eef_assembly6_scaled_rebuild.stl"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/prod_eef_assembly6_scaled_rebuild.stl"/>
+      </geometry>
+      <material name="Grey"/>
+    </collision>
+  </link>
+  
+  <!--  Here we define another dummy joint. It is placed at the end of the tool, so we can then attach a frame at its TCP for control -->
+  <joint name="eef_tip_joint" type="fixed">
+    <parent link="eef_link" />
+    <child link = "eef_link_ee" />
+    <origin xyz="${eef_link_offset}" rpy="0 0 0" />   
+  </joint>
+  
+  <!--  The TCP frame is here defined -->
+  <link name="eef_link_ee"/>
+</robot> 

@@ -22,7 +22,7 @@ tolerance = 0.01
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface(synchronous=True)
-group_name = 'arm_w_eef'
+group_name = 'eef_light_static'
 move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
@@ -347,16 +347,14 @@ def move(route):
 
 
 
-
 # MAIN LOOP THAT CALLS THE FUNCTIONS
 
 while not rospy.is_shutdown():
-    move_group.set_max_velocity_scaling_factor(0.01)
+    move_group.set_max_velocity_scaling_factor(0.1)
     
     move('home_joint_0')
 
     break
-
 
     # print('home joint 0 (singularity safe)')
 

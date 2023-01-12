@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: iiwa_description
+    relative_path: urdf/iiwa14_light_static.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/iiwa14_camera_light_static_eef.srdf
+  CONFIG:
+    author_name: Alexander Neubert
+    author_email: alexander_neubert@icloud.com
+    generated_timestamp: 1673513024
