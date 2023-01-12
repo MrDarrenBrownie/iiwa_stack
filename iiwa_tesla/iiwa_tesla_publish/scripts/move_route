@@ -13,12 +13,15 @@ from std_msgs.msg import String
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
 
+
+
 # INITIALIZE MOVEIT
 
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
+pose_to_rviz = rospy.Publisher('/iiwa/move_group/p2r', geometry_msgs.msg.PoseArray, queue_size=1)
 rate = rospy.Rate(1)
-tolerance = 0.01
+tolerance = 0.1
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface(synchronous=True)
@@ -33,6 +36,7 @@ eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
 rospy.sleep(5)
+
 
 
 # ADD OBSTACLE TO SCENE -> TESLA PART
@@ -103,11 +107,14 @@ def add_tesla_part():
 add_tesla_part()
 
 
+
 # IMPORT FRAMES FROM JSON FILE CREATED OUTSIDE OF ROS
 
-file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_fromCAD_afterTranslation2.json')
+file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_fromCAD_afterTranslation4.json')
 frames_wheel_house_left = json.load(file)
 file.close()
+
+
 
 # FUNCTIONS TO GENERATE FRAMES (probably deprecated)
 
@@ -271,6 +278,7 @@ def is_goal_reached(move_group, goal, tolerance):
             print('wait for movement to be finished')
 
 
+
 # INITIALIZE POSITIONS (deprecated in future)
 
 home_joint_0 = home_pose_singularity_safe()
@@ -282,9 +290,11 @@ home_joint_2 = start_position_middle()
 home_cartesian = geometry_msgs.msg.Pose()
 
 
+
 # CREATE ROUTES DICTIONARY WHERE ALL ROUTES ARE STORED
 
 routes = {'home_joint_0':home_joint_0, 'home_joint_1':home_joint_1, 'home_joint2':home_joint_2}
+
 
 
 # ADD CAD IMPORTED FRAMES TO ROUTES DICTIONARY
@@ -293,23 +303,19 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
-        point.position.x = frames_wheel_house_left[key]['x']/1000
-        point.position.y = frames_wheel_house_left[key]['y']/1000
-        point.position.z = frames_wheel_house_left[key]['z']/1000
+        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289)
+        point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401
+        point.position.z = (frames_wheel_house_left[key]['z']/1000)
         
         # Orientation depending on position of frame -> upper lane, bottom lane,...
         
-        point.orientation.x = 0.0
-        point.orientation.y = 0.0
-        point.orientation.z = 0.0
-        point.orientation.w = 1.0
+        point_orientation_transform = tf.transformations.quaternion_from_euler(0,pi/2,0)
+        point.orientation.x = point_orientation_transform[0]
+        point.orientation.y = point_orientation_transform[1]
+        point.orientation.z = point_orientation_transform[2]
+        point.orientation.w = point_orientation_transform[3]
         
-
     return list_of_frames
-
-routes['wheel_house_left'] = gmtry_msg_from_CADdata(frames_wheel_house_left)
-
-print(routes['wheel_house_left'][0])
 
 def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in frameGrammer_frames_dict.keys()]
@@ -325,6 +331,22 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
     return list_of_frames
 
+routes['wheel_house_left'] = gmtry_msg_from_CADdata(frames_wheel_house_left)
+
+
+
+# PUBLISH AN ARRAY OF FRAMES TO RVIZ TO VISUALIZE THE POSES THE ROBOT IS TRYING TO REACH
+
+def publish_posearray_to_rviz(pose_array):
+    p2r_msg = geometry_msgs.msg.PoseArray()
+    p2r_msg.header.frame_id = 'world'
+    p2r_msg.header.stamp = rospy.Time.now()
+    p2r_msg.poses = pose_array
+    return pose_to_rviz.publish(p2r_msg)
+
+publish_posearray_to_rviz(routes['wheel_house_left'])
+
+
 
 # MAIN MOVEMENT FUNCTION
 
@@ -337,6 +359,7 @@ def move(route):
 
     else:
         for n, waypoint in enumerate(routes[route]):
+
             move_group.set_start_state_to_current_state()
             move_group.set_pose_target(waypoint)
             move_group.go()
@@ -349,15 +372,17 @@ def move(route):
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
 
-while not rospy.is_shutdown():
-    move_group.set_max_velocity_scaling_factor(0.1)
+def run_main():
     
+    # move_group.set_max_velocity_scaling_factor(0.1)
+
     move('home_joint_0')
 
-    break
+    while not rospy.is_shutdown():
+    
+        move('wheel_house_left')
 
-    # print('home joint 0 (singularity safe)')
+        break
+        # pass
 
-    # print(routes['wheel_house_left'][0])
-
-    # pass
+run_main()

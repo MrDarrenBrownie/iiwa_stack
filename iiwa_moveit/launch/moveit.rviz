@@ -4,9 +4,10 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /MotionPlanning1
         - /MotionPlanning1/Planning Request1
         - /MotionPlanning1/Planned Path1
+        - /Pose1
+        - /PoseArray1
       Splitter Ratio: 0.7425600290298462
     Tree Height: 434
   - Class: rviz/Help
@@ -72,6 +73,15 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
+          eef_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          eef_link_ee:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           iiwa_link_0:
             Alpha: 1
             Show Axes: false
@@ -143,7 +153,7 @@ Visualization Manager:
         Goal State Color: 250; 128; 0
         Interactive Marker Size: 0
         Joint Violation Color: 255; 0; 255
-        Planning Group: arm_w_eef
+        Planning Group: eef_light_static
         Query Goal State: true
         Query Start State: false
         Show Workspace: false
@@ -166,6 +176,15 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
+          eef_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          eef_link_ee:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           iiwa_link_0:
             Alpha: 1
             Show Axes: false
@@ -233,7 +252,7 @@ Visualization Manager:
       Axes Radius: 0.10000000149011612
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: Pose
@@ -241,7 +260,24 @@ Visualization Manager:
       Shaft Length: 1
       Shaft Radius: 0.05000000074505806
       Shape: Arrow
-      Topic: ""
+      Topic: /iiwa/move_group/p2r
+      Unreliable: false
+      Value: false
+    - Alpha: 1
+      Arrow Length: 0.30000001192092896
+      Axes Length: 0.30000001192092896
+      Axes Radius: 0.009999999776482582
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.07000000029802322
+      Head Radius: 0.029999999329447746
+      Name: PoseArray
+      Queue Size: 10
+      Shaft Length: 0.4000000059604645
+      Shaft Radius: 0.004999999888241291
+      Shape: Arrow (3D)
+      Topic: /iiwa/move_group/p2r
       Unreliable: false
       Value: true
   Enabled: true
@@ -260,7 +296,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 7.175015926361084
+      Distance: 4.012836933135986
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -276,9 +312,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.19520309567451477
+      Pitch: 0.12020314484834671
       Target Frame: world
-      Yaw: 3.7331228256225586
+      Yaw: 3.798119306564331
     Saved: ~
 Window Geometry:
   Displays:
