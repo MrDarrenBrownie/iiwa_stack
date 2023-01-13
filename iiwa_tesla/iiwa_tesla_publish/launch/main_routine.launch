@@ -1,12 +1,12 @@
 <launch>
-    <arg name="move_group" default="arm_w_eef" />
+    <arg name="move_group" default="eef_light_static" />
     <arg name="sim" default="false" />
     <arg name="rviz" default="true" />
-    <arg name="move" default="false" />
+    <arg name="move" default="true" />
     <arg name="respawn" default="false" />
     <arg name="grab_frames" default="false" />
-    <arg name="w_o_eef" default="true" />
-    <arg name="w_eef_static" default="false" />
+    <arg name="w_o_eef" default="false" />
+    <arg name="w_eef_static" default="true" />
     <arg name="w_eef_adjustable" default="false" />
 
     <include file="$(find iiwa_tesla_publish)/launch/iiwa_tesla_launch_full.launch">

@@ -63,30 +63,12 @@ def wait_for_state_update(object_name, object_is_known=False, object_is_attached
 
         return False
 
-def add_box():
-    box_pose = geometry_msgs.msg.PoseStamped()
-    box_pose.header.frame_id = 'world'
-    box_pose.pose.position.x = 0.09
-    box_pose.pose.position.y = -0.75
-    box_pose.pose.position.z = 0.8
-    box_pose_orientation = tf.transformations.quaternion_from_euler(0,0,0)
-    box_pose.pose.orientation.x = box_pose_orientation[0]
-    box_pose.pose.orientation.y = box_pose_orientation[1]
-    box_pose.pose.orientation.z = box_pose_orientation[2]
-    box_pose.pose.orientation.w = box_pose_orientation[3]
-    box_name = 'box_tesla_part'
-    scene.add_box(box_name, box_pose, size=(1.0, 1.50, 0.15))
-    rospy.sleep(1)
-    if not wait_for_state_update(object_name=box_name, object_is_known=True):
-        return print('timeout')
-    else:
-        return print('box attached')
 
 def add_tesla_part():
     # position transformation because bad cad model
     tesla_part_pose = geometry_msgs.msg.PoseStamped()
     tesla_part_pose.header.frame_id = 'world'
-    tesla_part_pose.pose.position.x = 0.25
+    tesla_part_pose.pose.position.x = 0.25-0.4
     tesla_part_pose.pose.position.y = 3.45
     tesla_part_pose.pose.position.z = 0.0
     rotation = tf.transformations.quaternion_from_euler(0,0,-pi/2)
@@ -103,9 +85,8 @@ def add_tesla_part():
     else:
         return print('part attached')
 
-# add_box()
-add_tesla_part()
 
+add_tesla_part()
 
 
 # IMPORT FRAMES FROM JSON FILE CREATED OUTSIDE OF ROS
@@ -270,12 +251,10 @@ def is_goal_reached(move_group, goal, tolerance):
         print('wait for movement to be finished')
         while not all_close(goal, move_group.get_current_joint_values(), tolerance):
             pass
-            # print('wait for movement to be finished')
     elif type(goal) is geometry_msgs.msg.Pose:
         print('wait for movement to be finished')
         while not all_close(goal, move_group.get_current_pose().pose, tolerance):
             pass
-            print('wait for movement to be finished')
 
 
 
@@ -303,7 +282,7 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
-        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289)
+        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289-0.4)
         point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401
         point.position.z = (frames_wheel_house_left[key]['z']/1000)
         
@@ -352,37 +331,50 @@ publish_posearray_to_rviz(routes['wheel_house_left'])
 
 def move(route):
     if not type(routes[route][0]) is geometry_msgs.msg.Pose:
-        move_group.set_start_state_to_current_state()
+        #move_group.set_start_state_to_current_state()
+        current_state = move_group.get_current_state()
+        move_group.set_start_state(current_state)
+
         move_group.set_joint_value_target(routes[route])
         move_group.go()
         is_goal_reached(move_group, routes[route], tolerance)
+        move_group.clear_pose_target(eef)
+        rospy.sleep(0.1)
 
     else:
         for n, waypoint in enumerate(routes[route]):
 
-            move_group.set_start_state_to_current_state()
+            #move_group.set_start_state_to_current_state()
+            current_state = move_group.get_current_state()
+            move_group.set_start_state(current_state)
+            
             move_group.set_pose_target(waypoint)
             move_group.go()
             print(n)
             is_goal_reached(move_group, waypoint, tolerance)
             move_group.clear_pose_target(eef)
-
+            rospy.sleep(0.1)
 
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
 
 def run_main():
-    
-    # move_group.set_max_velocity_scaling_factor(0.1)
 
-    move('home_joint_0')
+    move_group.set_max_velocity_scaling_factor(0.5)
+
+    print('main function')
+
+    # move('home_joint_0')
 
     while not rospy.is_shutdown():
-    
+        
+        print('starting main loop')
         move('wheel_house_left')
 
-        break
         # pass
 
-run_main()
+
+print(scene.get_known_object_names())
+if 'model_y_rear_axle' in scene.get_known_object_names():
+    run_main()

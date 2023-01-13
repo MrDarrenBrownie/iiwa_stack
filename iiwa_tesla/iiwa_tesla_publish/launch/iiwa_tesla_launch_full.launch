@@ -5,8 +5,8 @@
 
     <arg name="robot_name" default="iiwa" />
     <arg name="model" default="iiwa14" />
-    <arg name="w_o_eef" default="true" />
-    <arg name="w_eef_static" default="false" />
+    <arg name="w_o_eef" default="false" />
+    <arg name="w_eef_static" default="true" />
     <arg name="w_eef_adjustable" default="false" />
 
     <arg name="hardware_interface" default ="PositionJointInterface" />
@@ -49,7 +49,7 @@
                 <arg name="robot_description" default="robot_description" />
 
                 <!-- iiwa14_upload -->
-                    <arg name="origin_xyz" default="'-1.1 -0.5 0'" />
+                    <arg name="origin_xyz" default="'-1.3 -0.5 0'" />
                     <arg name="origin_rpy" default="'0 0 0'" />
                     <!-- if robot model is used with eef or not -->
                     <param if="$(arg w_o_eef)" name="robot_description" command="$(find xacro)/xacro '$(find iiwa_description)/urdf/iiwa14.urdf.xacro' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg robot_name) origin_xyz:=$(arg origin_xyz) origin_rpy:=$(arg origin_rpy)" />
@@ -62,9 +62,7 @@
                 <param if="$(arg w_eef_adjustable)" name="$(arg robot_description)_semantic" textfile="$(find iiwa_eef_light_adjustable)/config/$(arg model)_camera_light_adjustable_eef.srdf" />
 
                 <group ns="$(arg robot_description)_planning">
-                    <rosparam if="$(arg w_o_eef)" file="$(find iiwa_moveit)/config/joint_limits.yaml" command="load" />
-                    <rosparam if="$(arg w_eef_static)" file="$(find iiwa_eef_light_static)/config/joint_limits.yaml" command="load" />
-                    <rosparam if="$(arg w_eef_adjustable)" file="$(find iiwa_eef_light_adjustable)/config/joint_limits.yaml" command="load" />
+                    <rosparam file="$(find iiwa_moveit)/config/joint_limits.yaml" command="load" />
                 </group>
                 <group ns="$(arg robot_description)_kinematics">
                     <rosparam if="$(arg w_o_eef)" file="$(find iiwa_moveit)/config/kinematics.yaml" command="load" />
@@ -99,6 +97,7 @@
                     <param name="moveit_manage_controllers" value="$(arg moveit_manage_controllers)" />
                     <param name="trajectory_execution/allowed_execution_duration_scaling" value="1.2" />
                     <param name="trajectory_execution/allowed_goal_duration_margin" value="0.5" />
+                    <param name="trajectory_execution/allowed_start_tolerance" value="0.05" />
             
                 <!-- controller_manager -->
                     <arg name="moveit_controller_manager" default="moveit_simple_controller_manager/MoveItSimpleControllerManager" />

@@ -83,7 +83,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_1.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -91,7 +91,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_1.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
@@ -122,7 +122,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_2.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -130,7 +130,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_2.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
@@ -161,7 +161,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_3.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -169,7 +169,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_3.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
@@ -200,7 +200,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_4.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -208,7 +208,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_4.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
@@ -239,7 +239,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_5.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -247,7 +247,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_5.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
@@ -278,7 +278,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/visual/link_6.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </visual>
       
       <collision>
@@ -286,7 +286,7 @@
         <geometry>
           <mesh filename="package://iiwa_description/meshes/iiwa14/collision/link_6.stl"/>
         </geometry>
-        <material name="Orange"/>
+        <material name="Grey"/>
       </collision>
     </link>
     
