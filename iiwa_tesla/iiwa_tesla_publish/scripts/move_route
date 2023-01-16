@@ -8,8 +8,7 @@ import tf.transformations
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-import sensor_msgs.msg
-from std_msgs.msg import String
+import shape_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
 
@@ -30,8 +29,8 @@ move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-move_group.set_planning_time(5)
-move_group.set_planner_id('RRTConnectkConfigDefault')
+move_group.set_planning_time(20)
+# move_group.set_planner_id('RRTConnectkConfigDefault')
 eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
@@ -68,7 +67,7 @@ def add_tesla_part():
     # position transformation because bad cad model
     tesla_part_pose = geometry_msgs.msg.PoseStamped()
     tesla_part_pose.header.frame_id = 'world'
-    tesla_part_pose.pose.position.x = 0.25-0.4
+    tesla_part_pose.pose.position.x = 0.25+0.4
     tesla_part_pose.pose.position.y = 3.45
     tesla_part_pose.pose.position.z = 0.0
     rotation = tf.transformations.quaternion_from_euler(0,0,-pi/2)
@@ -81,9 +80,9 @@ def add_tesla_part():
     scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.001,0.001,0.001))
     rospy.sleep(1)
     if not wait_for_state_update(object_name=tesla_part_name, object_is_known=True):
-        return print('timeout')
+        return rospy.logerr('timeout while adding '+str(tesla_part_name)+' to the scene!')
     else:
-        return print('part attached')
+        return rospy.loginfo(str(tesla_part_name)+' attached')
 
 
 add_tesla_part()
@@ -98,124 +97,6 @@ file.close()
 
 
 # FUNCTIONS TO GENERATE FRAMES (probably deprecated)
-
-def home_pose_singularity_safe():
-    return [0.1 for x in range(7)]
-
-def home_pose_straight():
-    return [0.0 for x in range(7)]
-
-def start_position_middle():
-    joint_pose = [0.0 for x in range(7)]
-    joint_pose[3] = -75.0 *(pi/180)
-    joint_pose[5] = 38.0 *(pi/180)
-    return joint_pose
-
-def relative_movement_from_start(start_pose, routes):
-    
-    start_pose = copy.deepcopy(start_pose)
-
-    rel_x = 0.1
-    rel_y = 0.1
-    
-    init_1_x = -0.1
-    init_1_y = 0.1
-    init_2_x = 0.05
-    init_2_y = init_1_y
-    init_3_x = init_2_x
-    init_3_y = - (init_1_y + rel_y)
-    init_4_x = init_1_x
-    init_4_y = - (init_1_y + rel_y)
-
-    init_x = [init_1_x, init_2_x, init_3_x, init_4_x]
-    init_y = [init_1_y, init_2_y, init_3_y, init_4_y]
-
-    for pos, (ix,iy) in enumerate(zip(init_x, init_y)):
-        route_n = []
-
-        position_init = copy.deepcopy(start_pose)
-        position_init.position.x += ix
-        position_init.position.y += iy
-        route_n.append(position_init)
-
-        position2 = copy.deepcopy(position_init)
-        position2.position.x += rel_x
-        route_n.append(position2)
-   
-        position3 = copy.deepcopy(position2)
-        position3.position.y += rel_y
-        route_n.append(position3)
-
-        position4 = copy.deepcopy(position3)
-        position4.position.x -= rel_x
-        route_n.append(position4)
-        routes['route'+str(pos)] = route_n
-
-    return routes
-
-def arms_middle(routes):
-    
-    # orientation in quaternions: [x, y, z, w]
-    orientation_left = [0.65, 0.75, 0.0, 0.015]
-    orientation_middle = [0.0, 0.75, 0.0, 0.5]
-    orientation_right = [1.0, 0.0, 0.0, 0.027]
-    
-    init_left_arm = geometry_msgs.msg.Pose()
-    init_left_arm.position.x = 0.0
-    init_left_arm.position.y = 0.3
-    init_left_arm.position.z = 0.8
-    init_left_arm.orientation.x = orientation_left[0]
-    init_left_arm.orientation.y = orientation_left[1]
-    init_left_arm.orientation.z = orientation_left[2]
-    init_left_arm.orientation.w = orientation_left[3]
-
-    end_left_arm = geometry_msgs.msg.Pose()
-    end_left_arm.position.x = 0.15
-    end_left_arm.position.y = 0.3
-    end_left_arm.position.z = 0.8
-    end_left_arm.orientation.x = orientation_left[0]
-    end_left_arm.orientation.y = orientation_left[1]
-    end_left_arm.orientation.z = orientation_left[2]
-    end_left_arm.orientation.w = orientation_left[3]
-
-    init_left_middle = geometry_msgs.msg.Pose()
-    init_left_middle.position.x = 0.15
-    init_left_middle.position.y = 0.3
-    init_left_middle.position.z = 0.8
-    init_left_middle.orientation.x = orientation_middle[0]
-    init_left_middle.orientation.y = orientation_middle[1]
-    init_left_middle.orientation.z = orientation_middle[2]
-    init_left_middle.orientation.w = orientation_middle[3]
-
-    init_right_middle = geometry_msgs.msg.Pose()
-    init_right_middle.position.x = 0.15
-    init_right_middle.position.y = -0.3
-    init_right_middle.position.z = 0.8
-    init_right_middle.orientation.x = orientation_middle[0]
-    init_right_middle.orientation.y = orientation_middle[1]
-    init_right_middle.orientation.z = orientation_middle[2]
-    init_right_middle.orientation.w = orientation_middle[3]
-
-    init_right_arm = geometry_msgs.msg.Pose()
-    init_right_arm.position.x = 0.0
-    init_right_arm.position.y = -0.3
-    init_right_arm.position.z = 0.8
-    init_right_arm.orientation.x = orientation_right[0]
-    init_right_arm.orientation.y = orientation_right[1]
-    init_right_arm.orientation.z = orientation_right[2]
-    init_right_arm.orientation.w = orientation_right[3]
-
-    end_right_arm = geometry_msgs.msg.Pose()
-    end_right_arm.position.x = 0.15
-    end_right_arm.position.y = -0.3
-    end_right_arm.position.z = 0.8
-    end_right_arm.orientation.x = orientation_right[0]
-    end_right_arm.orientation.y = orientation_right[1]
-    end_right_arm.orientation.z = orientation_right[2]
-    end_right_arm.orientation.w = orientation_right[3]
-
-    routes['arms_middle'] = [init_left_arm, end_left_arm, init_left_middle, init_right_middle, end_right_arm, init_right_arm]
-    return routes
 
 def all_close(goal, actual, tolerance):
     """
@@ -248,31 +129,45 @@ def all_close(goal, actual, tolerance):
 
 def is_goal_reached(move_group, goal, tolerance):
     if type(goal) is list:
-        print('wait for movement to be finished')
+        rospy.loginfo('wait for movement to be finished')
         while not all_close(goal, move_group.get_current_joint_values(), tolerance):
             pass
     elif type(goal) is geometry_msgs.msg.Pose:
-        print('wait for movement to be finished')
+        rospy.loginfo('wait for movement to be finished')
         while not all_close(goal, move_group.get_current_pose().pose, tolerance):
             pass
 
+def box_constraint():
+    
+    path_constraint = moveit_msgs.msg.Constraints()
+    path_constraint.name = 'path_constraints'
+
+    pos_constraint = moveit_msgs.msg.PositionConstraint()
+    pos_constraint.link_name = 'eef_link_ee'
+    pos_constraint.weight = 1.0
+    
+    pos_constraint.target_point_offset = geometry_msgs.msg.Vector3()
+    pos_constraint.target_point_offset.x = 0.01
+    pos_constraint.target_point_offset.y = 0.01
+    pos_constraint.target_point_offset.z = 0.01
+    
+    pos_constraint.constraint_region = moveit_msgs.msg.BoundingVolume()
+
+    const_region_primitives = shape_msgs.msg.SolidPrimitive()
+    const_region_primitives.type = 1
+    const_region_primitives.dimensions = [1.2, 1.5, 1.5]
+    pos_constraint.constraint_region.primitives = [const_region_primitives]
+
+    prim_pose = geometry_msgs.msg.Pose()
+    prim_pose.position.x = -0.6
+    prim_pose.position.y = -0.75
+    prim_pose.position.x = 0.75
+    pos_constraint.constraint_region.primitive_poses = [prim_pose]
+
+    path_constraint.position_constraints = [pos_constraint]
 
 
-# INITIALIZE POSITIONS (deprecated in future)
-
-home_joint_0 = home_pose_singularity_safe()
-
-home_joint_1 = home_pose_straight()
-
-home_joint_2 = start_position_middle()
-
-home_cartesian = geometry_msgs.msg.Pose()
-
-
-
-# CREATE ROUTES DICTIONARY WHERE ALL ROUTES ARE STORED
-
-routes = {'home_joint_0':home_joint_0, 'home_joint_1':home_joint_1, 'home_joint2':home_joint_2}
+    return path_constraint
 
 
 
@@ -282,7 +177,7 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
-        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289-0.4)
+        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289)
         point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401
         point.position.z = (frames_wheel_house_left[key]['z']/1000)
         
@@ -310,7 +205,7 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
     return list_of_frames
 
-routes['wheel_house_left'] = gmtry_msg_from_CADdata(frames_wheel_house_left)
+routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left)}
 
 
 
@@ -331,7 +226,6 @@ publish_posearray_to_rviz(routes['wheel_house_left'])
 
 def move(route):
     if not type(routes[route][0]) is geometry_msgs.msg.Pose:
-        #move_group.set_start_state_to_current_state()
         current_state = move_group.get_current_state()
         move_group.set_start_state(current_state)
 
@@ -342,15 +236,15 @@ def move(route):
         rospy.sleep(0.1)
 
     else:
-        for n, waypoint in enumerate(routes[route]):
 
-            #move_group.set_start_state_to_current_state()
+
+        for n, waypoint in enumerate(routes[route]):
             current_state = move_group.get_current_state()
             move_group.set_start_state(current_state)
-            
+            move_group.set_path_constraints(box_constraint())
             move_group.set_pose_target(waypoint)
             move_group.go()
-            print(n)
+            rospy.loginfo('moving to position '+str(n))
             is_goal_reached(move_group, waypoint, tolerance)
             move_group.clear_pose_target(eef)
             rospy.sleep(0.1)
@@ -359,22 +253,20 @@ def move(route):
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
 
+n_rounds = 0
 def run_main():
 
     move_group.set_max_velocity_scaling_factor(0.5)
 
-    print('main function')
-
-    # move('home_joint_0')
+    rospy.loginfo('Main function started')
 
     while not rospy.is_shutdown():
         
-        print('starting main loop')
+        rospy.loginfo('Starting main loop. Round '+str(n_rounds))
         move('wheel_house_left')
 
-        # pass
 
 
-print(scene.get_known_object_names())
+rospy.loginfo('objects in scene: '+str(scene.get_known_object_names()))
 if 'model_y_rear_axle' in scene.get_known_object_names():
     run_main()

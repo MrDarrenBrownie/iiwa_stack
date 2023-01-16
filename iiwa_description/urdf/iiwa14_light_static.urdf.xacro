@@ -86,7 +86,7 @@
   <!-- Tool properties -->
   <xacro:property name="eef_mass" value="0.200" />
   <xacro:property name="eef_joint_offset" value="0.00 0.00 0.00" />
-  <xacro:property name="eef_link_offset" value="0.00 0.00 0.12" />
+  <xacro:property name="eef_link_offset" value="0.00 0.00 0.190" />
   
   <!--  Here we define a dummy joint between the tip of the iiwa14 and the base of the tool. 
   There is no offset between the two, that means the tool is attached at the robot flange. -->
@@ -100,14 +100,14 @@
   Else, one can define it using a geometric representation that approximate it, like a cylinder (see commented lines) -->
   <link name="eef_link">
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 ${PI/2}"/>
       <geometry>
 	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/prod_eef_assembly5_scaled_rebuild.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 ${PI/2}"/>
       <geometry>
 	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/prod_eef_assembly5_scaled_rebuild.stl"/>
       </geometry>
