@@ -11,7 +11,7 @@ import geometry_msgs.msg
 import shape_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
-
+# from trac_ik_python.trac_ik import IK
 
 
 # INITIALIZE MOVEIT
@@ -29,8 +29,8 @@ move_group = moveit_commander.MoveGroupCommander(group_name)
 
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-move_group.set_planning_time(20)
-# move_group.set_planner_id('RRTConnectkConfigDefault')
+move_group.set_planning_time(60)
+move_group.set_planner_id('RRTConnectkConfigDefault')
 eef = move_group.get_end_effector_link()
 move_group.set_end_effector_link(eef)
 
@@ -96,7 +96,7 @@ file.close()
 
 
 
-# FUNCTIONS TO GENERATE FRAMES (probably deprecated)
+# WORKING WITH FRAMES AND GOALS 
 
 def all_close(goal, actual, tolerance):
     """
@@ -137,38 +137,25 @@ def is_goal_reached(move_group, goal, tolerance):
         while not all_close(goal, move_group.get_current_pose().pose, tolerance):
             pass
 
-def box_constraint():
-    
-    path_constraint = moveit_msgs.msg.Constraints()
-    path_constraint.name = 'path_constraints'
+def ompl_box_constraint():
+    pcm = moveit_msgs.msg.PositionConstraint()
+    pcm.header.frame_id = 'world'
+    pcm.link_name = 'eef_link_ee'
+    pcm.weight = 1.0
 
-    pos_constraint = moveit_msgs.msg.PositionConstraint()
-    pos_constraint.link_name = 'eef_link_ee'
-    pos_constraint.weight = 1.0
-    
-    pos_constraint.target_point_offset = geometry_msgs.msg.Vector3()
-    pos_constraint.target_point_offset.x = 0.01
-    pos_constraint.target_point_offset.y = 0.01
-    pos_constraint.target_point_offset.z = 0.01
-    
-    pos_constraint.constraint_region = moveit_msgs.msg.BoundingVolume()
+    cbox = shape_msgs.msg.SolidPrimitive()
+    cbox.type = shape_msgs.msg.SolidPrimitive.BOX
+    cbox.dimensions = [1.5, 0.5, 0.25]
+    pcm.constraint_region.primitives.append(cbox)
 
-    const_region_primitives = shape_msgs.msg.SolidPrimitive()
-    const_region_primitives.type = 1
-    const_region_primitives.dimensions = [1.2, 1.5, 1.5]
-    pos_constraint.constraint_region.primitives = [const_region_primitives]
+    cbox_pose = geometry_msgs.msg.Pose()
+    cbox_pose.position.x = -0.6
+    cbox_pose.position.y = -0.25
+    cbox_pose.position.z = 0.5
+    cbox_pose.orientation.w = 1.0
+    pcm.constraint_region.primitive_poses.append(cbox_pose)
 
-    prim_pose = geometry_msgs.msg.Pose()
-    prim_pose.position.x = -0.6
-    prim_pose.position.y = -0.75
-    prim_pose.position.x = 0.75
-    pos_constraint.constraint_region.primitive_poses = [prim_pose]
-
-    path_constraint.position_constraints = [pos_constraint]
-
-
-    return path_constraint
-
+    return pcm
 
 
 # ADD CAD IMPORTED FRAMES TO ROUTES DICTIONARY
@@ -177,7 +164,7 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
-        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.289)
+        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.05)
         point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401
         point.position.z = (frames_wheel_house_left[key]['z']/1000)
         
@@ -236,19 +223,32 @@ def move(route):
         rospy.sleep(0.1)
 
     else:
+        
+        pcm = ompl_box_constraint()
+        path_constraint = moveit_msgs.msg.Constraints()
+        path_constraint.position_constraints.append(pcm)
 
-
-        for n, waypoint in enumerate(routes[route]):
-            current_state = move_group.get_current_state()
-            move_group.set_start_state(current_state)
-            move_group.set_path_constraints(box_constraint())
-            move_group.set_pose_target(waypoint)
-            move_group.go()
-            rospy.loginfo('moving to position '+str(n))
-            is_goal_reached(move_group, waypoint, tolerance)
-            move_group.clear_pose_target(eef)
-            rospy.sleep(0.1)
-
+        for n, waypoint in enumerate(routes[route][::10]):
+            if n == 0:
+                current_state = move_group.get_current_state()
+                move_group.set_start_state(current_state)
+                move_group.set_pose_target(waypoint)
+                # move_group.set_path_constraints(path_constraint())
+                rospy.loginfo('moving to position '+str(n))
+                move_group.go()
+                is_goal_reached(move_group, waypoint, tolerance)
+                move_group.clear_pose_target(eef)
+                rospy.sleep(0.1)
+            else:
+                current_state = move_group.get_current_state()
+                move_group.set_start_state(current_state)
+                move_group.set_pose_target(waypoint)
+                # move_group.set_path_constraints(path_constraint)
+                rospy.loginfo('moving to position '+str(n))
+                move_group.go()
+                is_goal_reached(move_group, waypoint, tolerance)
+                move_group.clear_pose_target(eef)
+                rospy.sleep(0.1)
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
@@ -256,12 +256,13 @@ def move(route):
 n_rounds = 0
 def run_main():
 
-    move_group.set_max_velocity_scaling_factor(0.5)
+    move_group.set_max_velocity_scaling_factor(1.0)
 
     rospy.loginfo('Main function started')
 
     while not rospy.is_shutdown():
         
+        # continue
         rospy.loginfo('Starting main loop. Round '+str(n_rounds))
         move('wheel_house_left')
 

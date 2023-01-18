@@ -10,7 +10,5 @@ controller_list:
       - iiwa_joint_6
       - iiwa_joint_7
 initial:  # Define initial robot poses per group
-#  - group: eef_light_static
-#    pose: home
-
-  []
+  - group: eef_light_static
+    pose: home_singularity_safe

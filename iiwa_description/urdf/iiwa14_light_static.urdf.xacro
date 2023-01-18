@@ -38,14 +38,14 @@
 
   <link name="wall">
     <visual>
-      <origin xyz="0 -1.35 0" rpy="0 0 0" />
+      <origin xyz="0 -1.25 0" rpy="0 0 0" />
       <geometry>
         <box size="4 0.01 4"/>
       </geometry>
       <material name="Black" />
     </visual>
     <collision>
-      <origin xyz="0 -1.35 0" rpy="0 0 0" />
+      <origin xyz="0 -1.25 0" rpy="0 0 0" />
       <geometry>
         <box size="4 0.01 4"/>
       </geometry>
@@ -56,27 +56,7 @@
     <child link="wall" />
   </joint>
 
-  <!-- Error when loading the part stl file. 
-  <link name="part">
-    <visual>
-      <origin xyz="0.25 3.45 0" rpy="0 0 ${-PI/2.0}" />
-      <geometry>
-        <mesh filename="/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl"/>
-      </geometry>
-      <material name="Black" />
-    </visual>
-    <collision>
-      <origin xyz="0.25 3.45 0" rpy="0 0 ${-PI/2.0}" />
-      <geometry>
-        <mesh filename="/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="part_joint" type="fixed">
-    <parent link="world" />
-    <child link="part" />
-  </joint>
--->
+  
 
   <!-- Here we insert an iiwa14 robot in the scene, it's origin is just on top of the box previously defined. You can use 0,0,0 if you don't have that. -->
   <xacro:iiwa14 hardware_interface="$(arg hardware_interface)" robot_name="$(arg robot_name)" parent="world">
