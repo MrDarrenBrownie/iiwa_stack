@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+
+import rospy
+from datetime import datetime
+import pandas as pd
+import csv
+import iiwa_msgs.msg
+from rospy_message_converter import message_converter, json_message_converter
+
+class tracker:
+    def __init__(self):
+        #self.header = ['position', 'velocity']
+        self.joints = ['seq','timestamp','a1','a2','a3','a4','a5','a6','a7']
+        self.positions = []
+        self.velocities = []
+        self.n_of_lines = 0
+
+        self.filename_position = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/position_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.filename_velocity = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/velocity_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
+
+        with open(self.filename_position, 'w') as output_file_header:
+            header_writer = csv.writer(output_file_header)
+            header_writer.writerow(self.joints)
+            output_file_header.close()
+        with open(self.filename_velocity, 'w') as output_file_header:
+            header_writer = csv.writer(output_file_header)
+            header_writer.writerow(self.joints)
+            output_file_header.close()
+
+
+        rospy.Subscriber('iiwa/state/JointPositionVelocity', iiwa_msgs.msg.JointPositionVelocity, self.callback)
+        rospy.init_node('track_joint_angles')
+        rospy.spin()
+
+
+    def callback(self, data):
+        j_pos_vel_dict = message_converter.convert_ros_message_to_dictionary(data)
+        seq = [self.n_of_lines, datetime.now().strftime('%Y%m%d%H%M%S%f')]
+        self.positions.append(seq + list(j_pos_vel_dict['position'].values()))
+        self.velocities.append(seq + list(j_pos_vel_dict['velocity'].values()))
+
+        self.n_of_lines += 1
+        if self.n_of_lines%1000 == 0:
+            with open(self.filename_position, 'a') as output_file:
+                data_writer = csv.writer(output_file)
+                data_writer.writerows(self.positions)
+                output_file.close()
+            print('lines written to file position')
+            with open(self.filename_velocity, 'a') as output_file:
+                data_writer = csv.writer(output_file)
+                data_writer.writerows(self.velocities)
+                output_file.close()
+            print('lines written to file velocity')
+
+tracker()
+
+print('tracking finished')

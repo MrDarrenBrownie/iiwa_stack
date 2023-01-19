@@ -156,4 +156,4 @@ eef_light_static:
     - SPARStwo
   projection_evaluator: joints(iiwa_joint_1,iiwa_joint_2)
   longest_valid_segment_fraction: 0.005
-  enforce_constrained_state_space: true
+  # enforce_constrained_state_space: true

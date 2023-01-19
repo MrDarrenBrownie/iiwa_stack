@@ -23,6 +23,4 @@
     -->
     
     <node if="$(arg move)" ns="iiwa" name="iiwa_tesla_move_route" pkg="iiwa_tesla_publish" type="move_route" respawn="$(arg respawn)" respawn_delay="10" output="screen" />
-
-    <!-- <node if="$(arg grab_frames)" ns="iiwa" name="frame_grabber" pkg="iiwa_tesla_publish" type="gather_frames" output="screen" launch-prefix="xterm -e" /> -->
 </launch>

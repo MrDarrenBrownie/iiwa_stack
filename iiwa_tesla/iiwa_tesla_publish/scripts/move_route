@@ -11,7 +11,6 @@ import geometry_msgs.msg
 import shape_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
-# from trac_ik_python.trac_ik import IK
 
 
 # INITIALIZE MOVEIT
@@ -157,6 +156,15 @@ def ompl_box_constraint():
 
     return pcm
 
+def joint_constraint(jn, jv):
+    jcm = moveit_msgs.msg.JointConstraint()
+    jcm.joint_name = jn
+    jcm.position = jv
+    jcm.tolerance_above = 0.05
+    jcm.tolerance_below = 0.05
+    jcm.weight = 0.3
+
+    return jcm
 
 # ADD CAD IMPORTED FRAMES TO ROUTES DICTIONARY
 
@@ -224,16 +232,17 @@ def move(route):
 
     else:
         
+        '''
         pcm = ompl_box_constraint()
         path_constraint = moveit_msgs.msg.Constraints()
         path_constraint.position_constraints.append(pcm)
+        '''
 
         for n, waypoint in enumerate(routes[route][::10]):
             if n == 0:
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
-                # move_group.set_path_constraints(path_constraint())
                 rospy.loginfo('moving to position '+str(n))
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
@@ -243,7 +252,7 @@ def move(route):
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
-                # move_group.set_path_constraints(path_constraint)
+                #move_group.set_path_constraints(fixed_joint)
                 rospy.loginfo('moving to position '+str(n))
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
@@ -262,7 +271,7 @@ def run_main():
 
     while not rospy.is_shutdown():
         
-        # continue
+        continue
         rospy.loginfo('Starting main loop. Round '+str(n_rounds))
         move('wheel_house_left')
 
