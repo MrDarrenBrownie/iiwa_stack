@@ -9,6 +9,7 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 import shape_msgs.msg
+import std_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
 
@@ -18,6 +19,8 @@ from moveit_commander.conversions import pose_to_list
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
 pose_to_rviz = rospy.Publisher('/iiwa/move_group/p2r', geometry_msgs.msg.PoseArray, queue_size=1)
+# display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
+loop_count_publisher = rospy.Publisher('/iiwa/loop_count', std_msgs.msg.UInt64, queue_size=5)
 rate = rospy.Rate(1)
 tolerance = 0.1
 
@@ -25,8 +28,6 @@ robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface(synchronous=True)
 group_name = 'eef_light_static'
 move_group = moveit_commander.MoveGroupCommander(group_name)
-
-display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
 move_group.set_planning_time(60)
 move_group.set_planner_id('RRTConnectkConfigDefault')
@@ -231,13 +232,6 @@ def move(route):
         rospy.sleep(0.1)
 
     else:
-        
-        '''
-        pcm = ompl_box_constraint()
-        path_constraint = moveit_msgs.msg.Constraints()
-        path_constraint.position_constraints.append(pcm)
-        '''
-
         for n, waypoint in enumerate(routes[route][::10]):
             if n == 0:
                 current_state = move_group.get_current_state()
@@ -246,34 +240,38 @@ def move(route):
                 rospy.loginfo('moving to position '+str(n))
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
+                
+                loop_count_publisher.publish(n_rounds)
+
                 move_group.clear_pose_target(eef)
-                rospy.sleep(0.1)
+                
             else:
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
-                #move_group.set_path_constraints(fixed_joint)
                 rospy.loginfo('moving to position '+str(n))
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
                 move_group.clear_pose_target(eef)
-                rospy.sleep(0.1)
+                
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
 
-n_rounds = 0
+n_rounds = std_msgs.msg.UInt64()
+
 def run_main():
 
     move_group.set_max_velocity_scaling_factor(1.0)
-
+    n_rounds.data = 0
     rospy.loginfo('Main function started')
 
     while not rospy.is_shutdown():
         
-        continue
-        rospy.loginfo('Starting main loop. Round '+str(n_rounds))
+        # continue
+        rospy.loginfo('Starting main loop. Round '+str(n_rounds.data))
         move('wheel_house_left')
+        n_rounds.data += 1
 
 
 

@@ -4,19 +4,21 @@ import rospy
 from datetime import datetime
 import pandas as pd
 import csv
+import std_msgs.msg
 import iiwa_msgs.msg
 from rospy_message_converter import message_converter, json_message_converter
 
 class tracker:
     def __init__(self):
         #self.header = ['position', 'velocity']
-        self.joints = ['seq','timestamp','a1','a2','a3','a4','a5','a6','a7']
+        self.joints = ['seq','timestamp', 'loop_count', 'a1','a2','a3','a4','a5','a6','a7']
         self.positions = []
         self.velocities = []
         self.n_of_lines = 0
+        self.loop_count = -1
 
-        self.filename_position = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/position_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.filename_velocity = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/velocity_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.filename_position = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_data/position_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.filename_velocity = '/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_data/velocity_values_'+datetime.now().strftime('%Y%m%d_%H%M%S')
 
         with open(self.filename_position, 'w') as output_file_header:
             header_writer = csv.writer(output_file_header)
@@ -27,30 +29,41 @@ class tracker:
             header_writer.writerow(self.joints)
             output_file_header.close()
 
-
+        rospy.Subscriber('iiwa/loop_count', std_msgs.msg.UInt64, self.set_loop_count)
         rospy.Subscriber('iiwa/state/JointPositionVelocity', iiwa_msgs.msg.JointPositionVelocity, self.callback)
         rospy.init_node('track_joint_angles')
         rospy.spin()
 
 
+    def set_loop_count(self, data):
+        self.loop_count = data.data
+
     def callback(self, data):
         j_pos_vel_dict = message_converter.convert_ros_message_to_dictionary(data)
-        seq = [self.n_of_lines, datetime.now().strftime('%Y%m%d%H%M%S%f')]
-        self.positions.append(seq + list(j_pos_vel_dict['position'].values()))
-        self.velocities.append(seq + list(j_pos_vel_dict['velocity'].values()))
+        list_poses = list(j_pos_vel_dict['position'].values())
+        list_velos = list(j_pos_vel_dict['velocity'].values())
+        seq_pos = [self.n_of_lines, datetime.now().strftime('%Y%m%d%H%M%S%f'), self.loop_count]
+        seq_pos.extend(list_poses)
+        seq_vel = [self.n_of_lines, datetime.now().strftime('%Y%m%d%H%M%S%f'), self.loop_count]
+        seq_vel.extend(list_velos)
 
-        self.n_of_lines += 1
-        if self.n_of_lines%1000 == 0:
+        self.positions.append(seq_pos)
+        self.velocities.append(seq_vel)
+
+        self.n_of_lines += 1 
+        if self.n_of_lines%100 == 0:
             with open(self.filename_position, 'a') as output_file:
                 data_writer = csv.writer(output_file)
                 data_writer.writerows(self.positions)
                 output_file.close()
-            print('lines written to file position')
+            print(str(self.n_of_lines)+' lines written to file position')
+            self.positions=[]
             with open(self.filename_velocity, 'a') as output_file:
                 data_writer = csv.writer(output_file)
                 data_writer.writerows(self.velocities)
                 output_file.close()
-            print('lines written to file velocity')
+            print(str(self.n_of_lines)+' lines written to file velocity')
+            self.velocities=[]
 
 tracker()
 
