@@ -234,18 +234,30 @@ def move(route):
     else:
         for n, waypoint in enumerate(routes[route][::10]):
             if n == 0:
+                # first point in cycle
+                current_state = move_group.get_current_state()
+                move_group.set_start_state(current_state)
+                move_group.set_pose_target(waypoint)
+                rospy.loginfo('moving to position '+str(n))
+                move_group.go()
+
+                is_goal_reached(move_group, waypoint, tolerance)
+                loop_count_publisher.publish(n_rounds)
+                
+                move_group.clear_pose_target(eef)
+
+            elif n == len(routes[route][::10]):
+                # last point in cycle
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
                 rospy.loginfo('moving to position '+str(n))
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
-                
-                loop_count_publisher.publish(n_rounds)
-
-                move_group.clear_pose_target(eef)
-                
+                move_group.clear_pose_target(eef)       
+            
             else:
+                # every other point in cycle
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
@@ -262,7 +274,7 @@ n_rounds = std_msgs.msg.UInt64()
 
 def run_main():
 
-    move_group.set_max_velocity_scaling_factor(1.0)
+    # move_group.set_max_velocity_scaling_factor(1.0)
     n_rounds.data = 0
     rospy.loginfo('Main function started')
 

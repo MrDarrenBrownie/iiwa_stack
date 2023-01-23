@@ -6,5 +6,5 @@ eef_light_static:
   kinematics_solver_timeout: 0.005
   #solve_type: Speed
   #solve_type: Distance
-  #solve_type: Manipulation1
-  solve_type: Manipulation2
+  solve_type: Manipulation1
+  #solve_type: Manipulation2
