@@ -21,7 +21,7 @@ from rospy_message_converter import message_converter
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
 pose_to_rviz = rospy.Publisher('/iiwa/move_group/p2r', geometry_msgs.msg.PoseArray, queue_size=1)
-# display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
+display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 loop_count_publisher = rospy.Publisher('/iiwa/loop_count', std_msgs.msg.UInt64, queue_size=5)
 rate = rospy.Rate(1)
 tolerance = 0.1
@@ -287,7 +287,6 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
 routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left}
 
-print(routes['wheel_house_left_jp'])
 
 
 # PUBLISH AN ARRAY OF FRAMES TO RVIZ TO VISUALIZE THE POSES THE ROBOT IS TRYING TO REACH
@@ -305,43 +304,77 @@ publish_posearray_to_rviz(routes['wheel_house_left'])
 
 # MAIN MOVEMENT FUNCTION
 
-def move(route):
-    if type(routes[route][0]) is iiwa_msgs.msg.JointPosition:
-
-        current_state = move_group.get_current_state()
-        move_group.set_start_state(current_state)
-
-        move_group.set_joint_value_target(routes[route])
-        move_group.go()
-        is_goal_reached(move_group, routes[route], tolerance)
-        move_group.clear_pose_target(eef)
-
-    elif type(routes[route][0]) is geometry_msgs.msg.Pose:
+def move(route, boundary_conditions=None):
+    if type(routes[route][0]) == geometry_msgs.msg.Pose or type(routes[route]) == geometry_msgs.msg.PoseStamped:
         for n, waypoint in enumerate(routes[route][::5]):
             if n == 0:
-            
+                # first point in cycle
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
-                move_group.set_pose_target(waypoint)
-                rospy.loginfo('moving to position '+str(n))
-                move_group.go()
 
-                is_goal_reached(move_group, waypoint, tolerance)
-                loop_count_publisher.publish(n_rounds)
-                
-                move_group.clear_pose_target(eef)
-                
+                if boundary_conditions == None:
+                    move_group.set_pose_target(waypoint)
+                    rospy.loginfo('moving to position '+str(n))
+                    move_group.go()
+                    is_goal_reached(move_group, waypoint, tolerance)
+                    # loop_count_publisher.publish(n_rounds)
+                    move_group.clear_pose_target(eef)
+
+                elif boundary_conditions == 'mvms_mean':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_mean_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_mean_init'], tolerance)
+
+                elif boundary_conditions == 'mvms_std':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_std_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_std_init'], tolerance)
+
+                elif boundary_conditions == 'mtc':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mtc_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mtc_init'], tolerance)
+
+                elif boundary_conditions == 'mjm':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mjm_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mjm_init'], tolerance)
+
 
             elif n == len(routes[route][::5]):
                 # last point in cycle
+                
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
-                move_group.set_pose_target(waypoint)
-                rospy.loginfo('moving to position '+str(n))
-                move_group.go()
-                is_goal_reached(move_group, waypoint, tolerance)
-                move_group.clear_pose_target(eef)       
-            
+
+                if boundary_conditions == None:
+                    move_group.set_pose_target(waypoint)
+                    rospy.loginfo('moving to position '+str(n))
+                    move_group.go()
+                    is_goal_reached(move_group, waypoint, tolerance)
+                    # loop_count_publisher.publish(n_rounds)
+                    move_group.clear_pose_target(eef)
+
+                elif boundary_conditions == 'mvms_mean':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_mean_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_mean_final'], tolerance)
+
+                elif boundary_conditions == 'mvms_std':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_std_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_std_final'], tolerance)
+
+                elif boundary_conditions == 'mtc':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mtc_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mtc_final'], tolerance)
+
+                elif boundary_conditions == 'mjm':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mjm_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mjm_final'], tolerance)
+
             else:
                 # every other point in cycle
                 current_state = move_group.get_current_state()
@@ -351,7 +384,9 @@ def move(route):
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
                 move_group.clear_pose_target(eef)
-                
+    else:
+        # complete cycle with joint positions
+        pass
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
@@ -369,7 +404,7 @@ def run_main():
         
         # continue
         rospy.loginfo('Starting main loop. Route '+route+'. Round '+str(n_rounds.data))
-        move(route)
+        move(route, 'mjm')
         n_rounds.data += 1
 
 
