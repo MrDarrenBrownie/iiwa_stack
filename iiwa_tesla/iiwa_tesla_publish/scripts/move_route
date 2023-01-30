@@ -13,6 +13,7 @@ import shape_msgs.msg
 import std_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
+from rospy_message_converter import message_converter
 
 
 # INITIALIZE MOVEIT
@@ -82,13 +83,6 @@ def add_tesla_part():
         return rospy.loginfo(str(tesla_part_name)+' attached')
 
 add_tesla_part()
-
-
-# IMPORT FRAMES (and joint positions from JupyterNotebook) FROM JSON FILE CREATED OUTSIDE OF ROS
-
-file = open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_fromCAD_afterTranslation4.json')
-frames_wheel_house_left = json.load(file)
-file.close()
 
 
 
@@ -167,6 +161,98 @@ def joint_constraint(jn, jv):
 
 # ADD CAD IMPORTED FRAMES TO ROUTES DICTIONARY
 
+# IMPORT FRAMES (and joint positions from JupyterNotebook) FROM JSON FILE CREATED OUTSIDE OF ROS
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/frames_wheel_house_fromCAD_afterTranslation4.json') as tesla_file:
+    frames_wheel_house_left = json.load(tesla_file)
+    tesla_file.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+def create_init_final_joint_positions():
+    init_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
+    final_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
+
+    init_min_acc_joint_movement.position.a1=0.893713
+    init_min_acc_joint_movement.position.a2=1.447269
+    init_min_acc_joint_movement.position.a3=0.044446
+    init_min_acc_joint_movement.position.a4=-0.226373
+    init_min_acc_joint_movement.position.a5=1.349588
+    init_min_acc_joint_movement.position.a6=-0.896436
+    init_min_acc_joint_movement.position.a7=-1.341778
+
+    final_min_acc_joint_movement.position.a1=0.969332
+    final_min_acc_joint_movement.position.a2=1.627458
+    final_min_acc_joint_movement.position.a3=0.749716
+    final_min_acc_joint_movement.position.a4=0.208179
+    final_min_acc_joint_movement.position.a5=0.804736
+    final_min_acc_joint_movement.position.a6=-0.804188
+    final_min_acc_joint_movement.position.a7=-1.571730
+
+    init_min_cycle_time = iiwa_msgs.msg.JointPosition()
+    final_min_cycle_time = iiwa_msgs.msg.JointPosition()
+
+    init_min_cycle_time.position.a1=0.835652
+    init_min_cycle_time.position.a2=1.456460
+    init_min_cycle_time.position.a3=0.563091
+    init_min_cycle_time.position.a4=-0.240133
+    init_min_cycle_time.position.a5=0.854718
+    init_min_cycle_time.position.a6=-0.935640
+    init_min_cycle_time.position.a7=-1.362517
+
+    final_min_cycle_time.position.a1=0.784435
+    final_min_cycle_time.position.a2=1.538425
+    final_min_cycle_time.position.a3=1.474135
+    final_min_cycle_time.position.a4=-0.240094
+    final_min_cycle_time.position.a5=0.063733
+    final_min_cycle_time.position.a6=-0.973431
+    final_min_cycle_time.position.a7=-1.498443
+
+    init_min_joint_velocity_mean = iiwa_msgs.msg.JointPosition() 
+    final_min_joint_velocity_mean = iiwa_msgs.msg.JointPosition()
+
+    init_min_joint_velocity_mean.position.a1=0.951882
+    init_min_joint_velocity_mean.position.a2=1.458486
+    init_min_joint_velocity_mean.position.a3=-0.459998
+    init_min_joint_velocity_mean.position.a4=-0.228591
+    init_min_joint_velocity_mean.position.a5=-1.161994
+    init_min_joint_velocity_mean.position.a6=0.831894
+    init_min_joint_velocity_mean.position.a7=1.630649
+
+    final_min_joint_velocity_mean.position.a1=0.770893
+    final_min_joint_velocity_mean.position.a2=1.552928
+    final_min_joint_velocity_mean.position.a3=-1.357880
+    final_min_joint_velocity_mean.position.a4=0.189346
+    final_min_joint_velocity_mean.position.a5=-0.188492
+    final_min_joint_velocity_mean.position.a6=0.882605
+    final_min_joint_velocity_mean.position.a7=1.438480
+
+    init_min_joint_velocity_std = iiwa_msgs.msg.JointPosition() 
+    final_min_joint_velocity_std = iiwa_msgs.msg.JointPosition()
+
+    init_min_joint_velocity_std.position.a1=0.862608
+    init_min_joint_velocity_std.position.a2=1.465091
+    init_min_joint_velocity_std.position.a3=0.340579
+    init_min_joint_velocity_std.position.a4=-0.210483
+    init_min_joint_velocity_std.position.a5=1.113175
+    init_min_joint_velocity_std.position.a6=-0.885426
+    init_min_joint_velocity_std.position.a7=-1.367787
+
+    final_min_joint_velocity_std.position.a1=0.836790
+    final_min_joint_velocity_std.position.a2=1.460838
+    final_min_joint_velocity_std.position.a3=0.594540
+    final_min_joint_velocity_std.position.a4=-0.234563
+    final_min_joint_velocity_std.position.a5=0.857482
+    final_min_joint_velocity_std.position.a6=-0.936265
+    final_min_joint_velocity_std.position.a7=-1.402647
+
+    return init_min_acc_joint_movement, final_min_acc_joint_movement, init_min_cycle_time, final_min_cycle_time, init_min_joint_velocity_mean, final_min_joint_velocity_mean, init_min_joint_velocity_std, final_min_joint_velocity_std
+
+init_min_acc_joint_movement, final_min_acc_joint_movement, init_min_cycle_time, final_min_cycle_time, init_min_joint_velocity_mean, final_min_joint_velocity_mean, init_min_joint_velocity_std, final_min_joint_velocity_std = create_init_final_joint_positions()
+
+
 def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
@@ -199,8 +285,9 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
     return list_of_frames
 
-routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left)}
+routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left}
 
+print(routes['wheel_house_left_jp'])
 
 
 # PUBLISH AN ARRAY OF FRAMES TO RVIZ TO VISUALIZE THE POSES THE ROBOT IS TRYING TO REACH
@@ -232,7 +319,7 @@ def move(route):
     elif type(routes[route][0]) is geometry_msgs.msg.Pose:
         for n, waypoint in enumerate(routes[route][::5]):
             if n == 0:
-                # first point in cycle
+            
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
                 move_group.set_pose_target(waypoint)
@@ -243,6 +330,7 @@ def move(route):
                 loop_count_publisher.publish(n_rounds)
                 
                 move_group.clear_pose_target(eef)
+                
 
             elif n == len(routes[route][::5]):
                 # last point in cycle
@@ -275,12 +363,13 @@ def run_main():
     # move_group.set_max_velocity_scaling_factor(1.0)
     n_rounds.data = 0
     rospy.loginfo('Main function started')
+    route = 'wheel_house_left'
 
     while not rospy.is_shutdown():
         
         # continue
-        rospy.loginfo('Starting main loop. Round '+str(n_rounds.data))
-        move('wheel_house_left')
+        rospy.loginfo('Starting main loop. Route '+route+'. Round '+str(n_rounds.data))
+        move(route)
         n_rounds.data += 1
 
 
