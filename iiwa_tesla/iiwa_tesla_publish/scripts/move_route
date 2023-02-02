@@ -22,7 +22,7 @@ pose_to_rviz = rospy.Publisher('/iiwa/move_group/p2r', geometry_msgs.msg.PoseArr
 display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 loop_count_publisher = rospy.Publisher('/iiwa/loop_count', std_msgs.msg.UInt64, queue_size=5)
 rate = rospy.Rate(1)
-tolerance = 0.1
+tolerance = 0.01
 
 robot = moveit_commander.RobotCommander()
 scene = moveit_commander.PlanningSceneInterface(synchronous=True)
@@ -64,9 +64,9 @@ def add_tesla_part():
     # position transformation because bad cad model
     tesla_part_pose = geometry_msgs.msg.PoseStamped()
     tesla_part_pose.header.frame_id = 'world'
-    tesla_part_pose.pose.position.x = 0.25+0.4
-    tesla_part_pose.pose.position.y = 3.45
-    tesla_part_pose.pose.position.z = 0.0
+    tesla_part_pose.pose.position.x = 0.25+0.4-0.2 #x position is set closer to the robot for security reasons
+    tesla_part_pose.pose.position.y = 3.45+0.2
+    tesla_part_pose.pose.position.z = 0.0-0.09
     rotation = tf.transformations.quaternion_from_euler(0,0,-pi/2)
     tesla_part_pose.pose.orientation.x = rotation[0]
     tesla_part_pose.pose.orientation.y = rotation[1]
@@ -74,7 +74,7 @@ def add_tesla_part():
     tesla_part_pose.pose.orientation.w = rotation[3]
 
     tesla_part_name = 'model_y_rear_axle'
-    scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.001,0.001,0.001))
+    scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.00105,0.00105,0.00105))
     if not wait_for_state_update(object_name=tesla_part_name, object_is_known=True):
         return rospy.logerr('timeout while adding '+str(tesla_part_name)+' to the scene!')
     else:
@@ -169,6 +169,7 @@ with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_pu
     jp_wheel_house_left = json.load(optimal_joint_positions_jsondata)
     optimal_joint_positions_jsondata.close()
 
+'''
 with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mvms_mean_full.json') as optimal_joint_positions_jsondata:
     jp_wheel_house_left_mvms_mean_full = json.load(optimal_joint_positions_jsondata)
     optimal_joint_positions_jsondata.close()
@@ -184,6 +185,13 @@ with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_pu
 with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mjm_full.json') as optimal_joint_positions_jsondata:
     jp_wheel_house_left_mjm_full = json.load(optimal_joint_positions_jsondata)
     optimal_joint_positions_jsondata.close()
+
+'''
+jp_wheel_house_left_mvms_mean_full = []
+jp_wheel_house_left_mvms_std_full = []
+jp_wheel_house_left_mtc_full = []
+jp_wheel_house_left_mjm_full = []
+
 
 def create_init_final_joint_positions():
     init_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
@@ -320,7 +328,7 @@ publish_posearray_to_rviz(routes['wheel_house_left'])
 
 def move(route, boundary_conditions=None):
     if type(routes[route][0]) == geometry_msgs.msg.Pose or type(routes[route]) == geometry_msgs.msg.PoseStamped:
-        for n, waypoint in enumerate(routes[route][::5]):
+        for n, waypoint in enumerate(routes[route][::2]):
             if n == 0:
                 # first point in cycle
                 current_state = move_group.get_current_state()
@@ -416,13 +424,14 @@ def move(route, boundary_conditions=None):
 n_rounds = std_msgs.msg.UInt64()
 
 def run_main():
-
-    move_group.set_max_velocity_scaling_factor(0.1)
+    scaling_factor = 0.1
+    move_group.set_max_velocity_scaling_factor(scaling_factor)
+    move_group.set_max_velocity_scaling_factor(scaling_factor)
     n_rounds.data = 0
     rospy.loginfo('Main function started')
     route = 'wheel_house_left'
-    # bc = 'mjm'
-    bc = None
+    bc = 'mjm'
+    #bc = None
 
     while not rospy.is_shutdown():
         

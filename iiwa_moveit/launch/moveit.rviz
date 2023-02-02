@@ -5,19 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1
-        - /MotionPlanning1/Scene Robot1/Links1/eef_link_ee1
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_01
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_11
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_21
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_31
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_41
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_51
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_61
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_71
-        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_ee1
-        - /MotionPlanning1/Scene Robot1/Links1/table1
-        - /MotionPlanning1/Scene Robot1/Links1/wall1
-        - /MotionPlanning1/Scene Robot1/Links1/world1
         - /MotionPlanning1/Planning Request1
       Splitter Ratio: 0.7425600290298462
     Tree Height: 503
@@ -175,7 +162,7 @@ Visualization Manager:
         Interactive Marker Size: 0
         Joint Violation Color: 255; 0; 255
         Planning Group: eef_light_static
-        Query Goal State: true
+        Query Goal State: false
         Query Start State: false
         Show Workspace: false
         Start State Alpha: 1
@@ -194,7 +181,7 @@ Visualization Manager:
         Links:
           All Links Enabled: true
           Expand Joint Details: false
-          Expand Link Details: true
+          Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
           eef_link:
@@ -205,7 +192,7 @@ Visualization Manager:
           eef_link_ee:
             Alpha: 1
             Show Axes: false
-            Show Trail: true
+            Show Trail: false
           iiwa_link_0:
             Alpha: 1
             Show Axes: false
@@ -300,20 +287,7 @@ Visualization Manager:
       Enabled: false
       History Length: 1
       Joints:
-        iiwa_joint_1:
-          Value: true
-        iiwa_joint_2:
-          Value: true
-        iiwa_joint_3:
-          Value: true
-        iiwa_joint_4:
-          Value: true
-        iiwa_joint_5:
-          Value: true
-        iiwa_joint_6:
-          Value: true
-        iiwa_joint_7:
-          Value: true
+        {}
       Name: Effort
       Queue Size: 10
       Robot Description: robot_description
