@@ -5,6 +5,20 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1
+        - /MotionPlanning1/Scene Robot1/Links1/eef_link_ee1
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_01
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_11
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_21
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_31
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_41
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_51
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_61
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_71
+        - /MotionPlanning1/Scene Robot1/Links1/iiwa_link_ee1
+        - /MotionPlanning1/Scene Robot1/Links1/table1
+        - /MotionPlanning1/Scene Robot1/Links1/wall1
+        - /MotionPlanning1/Scene Robot1/Links1/world1
+        - /MotionPlanning1/Planning Request1
       Splitter Ratio: 0.7425600290298462
     Tree Height: 503
   - Class: rviz/Help
@@ -148,7 +162,7 @@ Visualization Manager:
         Trajectory Topic: move_group/display_planned_path
         Use Sim Time: false
       Planning Metrics:
-        Payload: 1
+        Payload: 6
         Show Joint Torques: false
         Show Manipulability: false
         Show Manipulability Index: false
@@ -161,7 +175,7 @@ Visualization Manager:
         Interactive Marker Size: 0
         Joint Violation Color: 255; 0; 255
         Planning Group: eef_light_static
-        Query Goal State: false
+        Query Goal State: true
         Query Start State: false
         Show Workspace: false
         Start State Alpha: 1
@@ -180,7 +194,7 @@ Visualization Manager:
         Links:
           All Links Enabled: true
           Expand Joint Details: false
-          Expand Link Details: false
+          Expand Link Details: true
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
           eef_link:
@@ -191,7 +205,7 @@ Visualization Manager:
           eef_link_ee:
             Alpha: 1
             Show Axes: false
-            Show Trail: false
+            Show Trail: true
           iiwa_link_0:
             Alpha: 1
             Show Axes: false
@@ -283,7 +297,7 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Class: rviz/Effort
-      Enabled: true
+      Enabled: false
       History Length: 1
       Joints:
         iiwa_joint_1:
@@ -307,14 +321,23 @@ Visualization Manager:
       TF Prefix: ""
       Topic: /iiwa/joint_states
       Unreliable: false
-      Value: true
+      Value: false
       Width: 0.019999999552965164
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: true
+      Length: 0.25
+      Name: Axes
+      Radius: 0.009999999776482582
+      Reference Frame: eef_link_ee
+      Show Trail: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
     Fixed Frame: world
-    Frame Rate: 30
+    Frame Rate: 60
   Name: root
   Tools:
     - Class: rviz/Interact
@@ -325,7 +348,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.028639316558838
+      Distance: 4.696835994720459
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -341,9 +364,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7353983521461487
+      Pitch: 0.4653986692428589
       Target Frame: <Fixed Frame>
-      Yaw: 2.2353992462158203
+      Yaw: 2.4853999614715576
     Saved:
       - Class: rviz/FrameAligned
         Enable Stereo Rendering:

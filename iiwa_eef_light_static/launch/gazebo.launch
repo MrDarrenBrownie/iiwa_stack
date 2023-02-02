@@ -13,7 +13,7 @@
   </include>
 
   <!-- Set the robot urdf on the parameter server -->
-  <param name="robot_description" textfile="$(find iiwa_eef_light_static)/config/gazebo_iiwa14_camera_light_static_eef.urdf" />
+  <param name="robot_description" command="xacro  '$(find iiwa_description)/urdf/iiwa14_light_static.urdf.xacro'" />
 
   <!-- Unpause the simulation after loading the robot model -->
   <arg name="unpause" value="$(eval '' if arg('paused') else '-unpause')" />

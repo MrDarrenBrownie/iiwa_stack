@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-import copy
 import json
 import rospy
 import tf.transformations
@@ -13,7 +12,6 @@ import shape_msgs.msg
 import std_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
-from rospy_message_converter import message_converter
 
 
 # INITIALIZE MOVEIT
@@ -171,6 +169,22 @@ with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_pu
     jp_wheel_house_left = json.load(optimal_joint_positions_jsondata)
     optimal_joint_positions_jsondata.close()
 
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mvms_mean_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mvms_mean_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mvms_std_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mvms_std_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mtc_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mtc_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mjm_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mjm_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
 def create_init_final_joint_positions():
     init_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
     final_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
@@ -259,7 +273,7 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
         point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.05)
         point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401+0.01
-        point.position.z = (frames_wheel_house_left[key]['z']/1000)-0.075
+        point.position.z = (frames_wheel_house_left[key]['z']/1000)-0
         
         # Orientation depending on position of frame -> upper lane, bottom lane,...
         
@@ -285,7 +299,7 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
     return list_of_frames
 
-routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left}
+routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left, 'wheel_house_left_mvms_mean_full':jp_wheel_house_left_mvms_mean_full, 'wheel_house_left_mvms_std_full':jp_wheel_house_left_mvms_std_full, 'wheel_house_left_mtc_full':jp_wheel_house_left_mtc_full, 'wheel_house_left_mjm_full':jp_wheel_house_left_mjm_full}
 
 
 
@@ -341,8 +355,10 @@ def move(route, boundary_conditions=None):
                     is_goal_reached(move_group, routes['wheel_house_left_jp']['mjm_init'], tolerance)
 
 
-            elif n == len(routes[route][::5]):
+            elif n == len(routes[route][::5])-1:
                 # last point in cycle
+
+                rospy.loginfo('last position')
                 
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
@@ -386,7 +402,13 @@ def move(route, boundary_conditions=None):
                 move_group.clear_pose_target(eef)
     else:
         # complete cycle with joint positions
-        pass
+        for n, position in enumerate(routes[route]):
+            current_state = move_group.get_current_state()
+            move_group.set_start_state(current_state)
+            rospy.loginfo('moving to position '+str(n))
+            move_group.set_joint_value_target(position)
+            is_goal_reached(move_group, position, tolerance)
+
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
@@ -395,16 +417,18 @@ n_rounds = std_msgs.msg.UInt64()
 
 def run_main():
 
-    # move_group.set_max_velocity_scaling_factor(1.0)
+    move_group.set_max_velocity_scaling_factor(0.1)
     n_rounds.data = 0
     rospy.loginfo('Main function started')
     route = 'wheel_house_left'
+    # bc = 'mjm'
+    bc = None
 
     while not rospy.is_shutdown():
         
         # continue
         rospy.loginfo('Starting main loop. Route '+route+'. Round '+str(n_rounds.data))
-        move(route, 'mjm')
+        move(route, bc)
         n_rounds.data += 1
 
 
