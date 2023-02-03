@@ -82,14 +82,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 ${PI/2}"/>
       <geometry>
-	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/primitive_model_230202-Body.stl"/>
+	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/primitive_model_230202-Body_2.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 ${PI/2}"/>
       <geometry>
-	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/primitive_model_230202-Body.stl"/>
+	      <mesh filename="package://iiwa_description/meshes/iiwa14/visual/primitive_model_230202-Body_2.stl"/>
       </geometry>
       <material name="Grey"/>
     </collision>

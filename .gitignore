@@ -84,3 +84,4 @@ iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.s
 
 iiwa_tesla/iiwa_tesla_data/*
 !iiwa_tesla/iiwa_tesla_data/joint_pos_vel_data.ipynb
+!iiwa_tesla/iiwa_tesla_data/jp_data.ipynb

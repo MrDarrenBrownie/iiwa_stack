@@ -171,6 +171,7 @@ catkin_install_python(PROGRAMS
   scripts/gather_frames
   scripts/add_objects_to_scene
   scripts/joint_angle_tracker
+  scripts/static_route
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

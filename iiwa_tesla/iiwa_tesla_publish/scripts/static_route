@@ -1,0 +1,197 @@
+#!/usr/bin/python3
+
+import rospy
+import json
+import iiwa_msgs.msg
+
+tolerance = 0.1
+
+'''
+static_joint_positions=[
+    [
+        1.521018,
+        0.936041,
+        1.910604,
+        1.258308,
+        -1.855485,
+        0.158411,
+        -0.274345
+    ],
+    [
+        1.444927,
+        1.644794,
+        1.317195,
+        1.192913,
+        -2.399043,
+        0.342944,
+        0.489742
+    ],
+    [
+        1.1943510,
+        1.3820263,
+        1.3170881,
+        1.0002621,
+        -2.6081762,
+        0.5374728,
+        0.7028585
+    ],
+    [
+        0.7913464,
+        1.2390279,
+        1.3213548,
+        1.2711143,
+        -1.1163173,
+        0.5534475,
+        -0.386846
+    ],
+    [
+        0.666157,
+        1.4797204,
+        1.3212623,
+        1.2574627,
+        -0.9950562,
+        0.3688588,
+        -0.5380257
+    ],
+    [
+        -0.2930321,
+        1.3347344,
+        1.3212584,
+        0.7278080,
+        -0.0709839,
+        1.4381128,
+        -1.1935557
+    ],
+    [
+        0.2932561,
+        1.2632293,
+        1.3211445,
+        1.2822453,
+        -0.3234543,
+        1.4547424,
+        -1.2192922
+    ],
+    [
+        0.878087,
+        1.1893045,
+        1.3214186,
+        1.5451080,
+        -0.5467594,
+        1.1560206,
+        -1.2594479
+    ],
+    [
+        1.3404828,
+        1.3577067,
+        1.3212687,
+        1.4183549,
+        -1.0051014,
+        0.5973182,
+        -1.0540941
+    ],
+    [
+        1.9971072,
+        1.3331114,
+        1.3212748,
+        1.7691743,
+        -2.3046097,
+        0.2332993,
+        0.4534233
+    ]
+]
+'''
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/static_jp_2.json') as jps:
+    static_joint_positions = json.load(jps)
+    jps.close()
+
+
+def all_close(goal, actual, tolerance):
+    """
+    Convenience method for testing if the values in two lists are within a tolerance of each other.
+    For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
+    between the identical orientations q and -q is calculated correctly).
+    @param: goal       A list of floats, a Pose or a PoseStamped
+    @param: actual     A list of floats, a Pose or a PoseStamped
+    @param: tolerance  A float
+    @returns: bool
+    """
+    
+    if type(goal) is list:
+        for index in range(len(goal)):
+            if abs(actual[index] - goal[index]) > tolerance:
+                return False
+    '''
+    elif type(goal) is geometry_msgs.msg.PoseStamped:
+        return all_close(goal.pose, actual.pose, tolerance)
+
+    elif type(goal) is geometry_msgs.msg.Pose:
+        x0, y0, z0, qx0, qy0, qz0, qw0 = pose_to_list(actual)
+        x1, y1, z1, qx1, qy1, qz1, qw1 = pose_to_list(goal)
+        # Euclidean distance
+        d = dist((x1, y1, z1), (x0, y0, z0))
+        # phi = angle between orientations
+        cos_phi_half = fabs(qx0 * qx1 + qy0 * qy1 + qz0 * qz1 + qw0 * qw1)
+        return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
+    '''
+
+    if goal[0] == 1.5211820602416992:
+        rospy.sleep(2)
+
+    return True
+
+###########################################################################
+
+class static_jp:
+    def __init__(self):
+        
+        self.current_position = []
+        self.static_position_publisher = rospy.Publisher('iiwa/command/JointPosition', iiwa_msgs.msg.JointPosition)
+
+        rospy.Subscriber('iiwa/state/JointPosition', iiwa_msgs.msg.JointPosition, self.write_current_position)
+        rospy.init_node('move_static_route')
+        
+        while not rospy.is_shutdown():
+            self.move_static_positions(l_of_static_positions=static_joint_positions)
+        
+        rospy.spin()
+
+    def write_current_position(self, data):
+        self.current_position = [
+            data.position.a1,
+            data.position.a2,
+            data.position.a3,
+            data.position.a4,
+            data.position.a5,
+            data.position.a6,
+            data.position.a7
+        ]
+    
+
+    def move_static_positions(self, l_of_static_positions):
+        static_position = iiwa_msgs.msg.JointPosition()
+        for pos in l_of_static_positions:
+            static_position.position.a1 = pos[0]
+            static_position.position.a2 = pos[1]
+            static_position.position.a3 = pos[2]
+            static_position.position.a4 = pos[3]
+            static_position.position.a5 = pos[4]
+            static_position.position.a6 = pos[5]
+            static_position.position.a7 = pos[6]
+
+            
+            while not all_close(pos, self.current_position, tolerance):
+                self.static_position_publisher.publish(static_position)
+
+
+###########################################################################
+
+def run_static_main():
+
+    static_jp()
+
+
+###########################################################################
+
+
+run_static_main()
