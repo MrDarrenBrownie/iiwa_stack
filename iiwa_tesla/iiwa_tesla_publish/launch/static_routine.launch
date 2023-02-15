@@ -1,0 +1,5 @@
+<launch>
+
+    <node ns="iiwa" name="static_route" pkg="iiwa_tesla_publish" type="static_route" output="screen" />
+
+</launch>
