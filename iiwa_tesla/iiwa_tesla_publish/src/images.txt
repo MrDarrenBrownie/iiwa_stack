@@ -1,0 +1,9 @@
+5 positions
+
+ringlight
+ringlight diffuse
+rectangular
+light_panel bottom
+light_panel top
+light_panel both
+light_panel both angles

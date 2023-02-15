@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+
+import rospy
+import iiwa_msgs.msg
+import geometry_msgs.msg
+
+spline = iiwa_msgs.msg.Spline()
+
+points = [geometry_msgs.msg.Pose() for point in range(10)]
+spline = [iiwa_msgs.msg.SplineSegment() for point in points]
+
+for p, s in zip(points, spline):
+    s.point = p
+

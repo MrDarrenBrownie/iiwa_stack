@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-import copy
 import json
 import rospy
 import tf.transformations
@@ -13,7 +12,6 @@ import shape_msgs.msg
 import std_msgs.msg
 from math import pi, dist, fabs, cos
 from moveit_commander.conversions import pose_to_list
-from rospy_message_converter import message_converter
 
 
 # INITIALIZE MOVEIT
@@ -21,7 +19,7 @@ from rospy_message_converter import message_converter
 moveit_commander.roscpp_initialize(sys.argv)
 rospy.init_node('iiwa_tesla_move_route')
 pose_to_rviz = rospy.Publisher('/iiwa/move_group/p2r', geometry_msgs.msg.PoseArray, queue_size=1)
-# display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
+display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 loop_count_publisher = rospy.Publisher('/iiwa/loop_count', std_msgs.msg.UInt64, queue_size=5)
 rate = rospy.Rate(1)
 tolerance = 0.1
@@ -66,9 +64,9 @@ def add_tesla_part():
     # position transformation because bad cad model
     tesla_part_pose = geometry_msgs.msg.PoseStamped()
     tesla_part_pose.header.frame_id = 'world'
-    tesla_part_pose.pose.position.x = 0.25+0.4
-    tesla_part_pose.pose.position.y = 3.45
-    tesla_part_pose.pose.position.z = 0.0
+    tesla_part_pose.pose.position.x = 0.25+0.4-0.05 #x position is set closer to the robot for security reasons
+    tesla_part_pose.pose.position.y = 3.45+0.2
+    tesla_part_pose.pose.position.z = 0.0-0.09
     rotation = tf.transformations.quaternion_from_euler(0,0,-pi/2)
     tesla_part_pose.pose.orientation.x = rotation[0]
     tesla_part_pose.pose.orientation.y = rotation[1]
@@ -76,7 +74,7 @@ def add_tesla_part():
     tesla_part_pose.pose.orientation.w = rotation[3]
 
     tesla_part_name = 'model_y_rear_axle'
-    scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.001,0.001,0.001))
+    scene.add_mesh(tesla_part_name, pose=tesla_part_pose, filename='/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl', size=(0.00105,0.00105,0.00105))
     if not wait_for_state_update(object_name=tesla_part_name, object_is_known=True):
         return rospy.logerr('timeout while adding '+str(tesla_part_name)+' to the scene!')
     else:
@@ -171,6 +169,30 @@ with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_pu
     jp_wheel_house_left = json.load(optimal_joint_positions_jsondata)
     optimal_joint_positions_jsondata.close()
 
+'''
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mvms_mean_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mvms_mean_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mvms_std_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mvms_std_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mtc_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mtc_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+with open('/home/alexander/iiwa_stack_ws/src/iiwa_stack/iiwa_tesla/iiwa_tesla_publish/src/jp_from_long_term_data_mjm_full.json') as optimal_joint_positions_jsondata:
+    jp_wheel_house_left_mjm_full = json.load(optimal_joint_positions_jsondata)
+    optimal_joint_positions_jsondata.close()
+
+'''
+jp_wheel_house_left_mvms_mean_full = []
+jp_wheel_house_left_mvms_std_full = []
+jp_wheel_house_left_mtc_full = []
+jp_wheel_house_left_mjm_full = []
+
+
 def create_init_final_joint_positions():
     init_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
     final_min_acc_joint_movement = iiwa_msgs.msg.JointPosition()
@@ -257,9 +279,9 @@ def gmtry_msg_from_CADdata(cad_frames_dict):
     list_of_frames = [geometry_msgs.msg.Pose() for item in cad_frames_dict.keys()]
 
     for point, key in zip(list_of_frames, cad_frames_dict.keys()):
-        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.05)
+        point.position.x = (frames_wheel_house_left[key]['x']/1000)-(0.401+0.05+0.1)
         point.position.y = (frames_wheel_house_left[key]['y']/1000)+0.401+0.01
-        point.position.z = (frames_wheel_house_left[key]['z']/1000)-0.075
+        point.position.z = (frames_wheel_house_left[key]['z']/1000)-0
         
         # Orientation depending on position of frame -> upper lane, bottom lane,...
         
@@ -285,9 +307,129 @@ def gmtry_msg_from_frameGrabber(frameGrammer_frames_dict):
 
     return list_of_frames
 
-routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left}
+def create_manual_joint_positions():
 
-print(routes['wheel_house_left_jp'])
+    static_joint_positions=[
+    [
+        1.521018,
+        0.936041,
+        1.910604,
+        1.258308,
+        -1.855485,
+        0.158411,
+        -0.274345
+    ],
+    [
+        1.444927,
+        1.644794,
+        1.317195,
+        1.192913,
+        -2.399043,
+        0.342944,
+        0.489742
+    ],
+    [
+        1.463225,
+        1.424553,
+        1.317221,
+        1.548506,
+        -1.261631,
+        0.266389,
+        -0.91075
+    ],
+    [
+        1.365327,
+        1.2061067,
+        1.317300,
+        1.773051,
+        -0.711992,
+        0.485281,
+        -1.319086
+    ],
+    [
+        0.937974,
+        1.5912815,
+        1.26207,
+        1.450368,
+        -0.569070,
+        0.2841261,
+        -0.9246565
+    ],
+    [
+        0.587496,
+        1.786331,
+        1.2620054,
+        1.525936,
+        0.04433607,
+        0.6074723,
+        -1.278944
+    ],
+
+    [
+        -0.2930321,
+        1.3347344,
+        1.3212584,
+        0.7278080,
+        -0.0709839,
+        1.4381128,
+        -1.1935557
+    ],
+    [
+        0.2932561,
+        1.2632293,
+        1.3211445,
+        1.2822453,
+        -0.3234543,
+        1.4547424,
+        -1.2192922
+    ],
+    [
+        0.878087,
+        1.1893045,
+        1.3214186,
+        1.5451080,
+        -0.5467594,
+        1.1560206,
+        -1.2594479
+    ],
+    [
+        1.3404828,
+        1.3577067,
+        1.3212687,
+        1.4183549,
+        -1.0051014,
+        0.5973182,
+        -1.0540941
+    ],
+    [
+        1.9971072,
+        1.3331114,
+        1.3212748,
+        1.7691743,
+        -2.3046097,
+        0.2332993,
+        0.4534233
+    ]
+]
+
+    '''
+
+    wh1 = [0.726119, 1.163919, 0.3994967, -0.607838, 1.135181, -1.0589932, -1.360126]
+    wh2 = [0.631852, 0.981213, 0.3994702, -0.827879, 1.147178, -1.0366281, -1.323252]
+    wh3 = [0.188, 0.753, 0.402, -1.109, 0.924, -0.602, -1.135]
+    wh4 = [-0.057, 0.772, 0.402, -1.136, 0.580, -0.425, -0.822]
+    wh5 = [-0.252, 0.786, 0.402, -1.2, 0.414, -0.432, -0.668]
+    missing_material_left = [0.5344649, 0.8522792, 0.3996127, -1.2551845, 0.3614095, -0.5930839, -0.5614498]
+    defect_top = []
+    l_of_jps = [wh1, wh2, wh3, wh4, wh5]
+    '''
+
+    return static_joint_positions
+
+jp_wheel_house_left_manual = create_manual_joint_positions()
+
+routes = {'wheel_house_left':gmtry_msg_from_CADdata(frames_wheel_house_left), 'wheel_house_left_jp':jp_wheel_house_left, 'wheel_house_left_mvms_mean_full':jp_wheel_house_left_mvms_mean_full, 'wheel_house_left_mvms_std_full':jp_wheel_house_left_mvms_std_full, 'wheel_house_left_mtc_full':jp_wheel_house_left_mtc_full, 'wheel_house_left_mjm_full':jp_wheel_house_left_mjm_full, 'wheel_house_left_manual':jp_wheel_house_left_manual}
+
 
 
 # PUBLISH AN ARRAY OF FRAMES TO RVIZ TO VISUALIZE THE POSES THE ROBOT IS TRYING TO REACH
@@ -305,43 +447,79 @@ publish_posearray_to_rviz(routes['wheel_house_left'])
 
 # MAIN MOVEMENT FUNCTION
 
-def move(route):
-    if type(routes[route][0]) is iiwa_msgs.msg.JointPosition:
-
-        current_state = move_group.get_current_state()
-        move_group.set_start_state(current_state)
-
-        move_group.set_joint_value_target(routes[route])
-        move_group.go()
-        is_goal_reached(move_group, routes[route], tolerance)
-        move_group.clear_pose_target(eef)
-
-    elif type(routes[route][0]) is geometry_msgs.msg.Pose:
-        for n, waypoint in enumerate(routes[route][::5]):
+def move(route, boundary_conditions=None, every_nth_point=1):
+    if type(routes[route][0]) == geometry_msgs.msg.Pose or type(routes[route]) == geometry_msgs.msg.PoseStamped:
+        for n, waypoint in enumerate(routes[route][::every_nth_point]):
             if n == 0:
-            
+                # first point in cycle
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
-                move_group.set_pose_target(waypoint)
-                rospy.loginfo('moving to position '+str(n))
-                move_group.go()
 
-                is_goal_reached(move_group, waypoint, tolerance)
-                loop_count_publisher.publish(n_rounds)
-                
-                move_group.clear_pose_target(eef)
-                
+                if boundary_conditions == None:
+                    move_group.set_pose_target(waypoint)
+                    rospy.loginfo('moving to position '+str(n))
+                    move_group.go()
+                    is_goal_reached(move_group, waypoint, tolerance)
+                    # loop_count_publisher.publish(n_rounds)
+                    move_group.clear_pose_target(eef)
 
-            elif n == len(routes[route][::5]):
+                elif boundary_conditions == 'mvms_mean':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_mean_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_mean_init'], tolerance)
+
+                elif boundary_conditions == 'mvms_std':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_std_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_std_init'], tolerance)
+
+                elif boundary_conditions == 'mtc':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mtc_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mtc_init'], tolerance)
+
+                elif boundary_conditions == 'mjm':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mjm_init'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mjm_init'], tolerance)
+
+
+            elif n == len(routes[route][::every_nth_point])-1:
                 # last point in cycle
+
+                rospy.loginfo('last position')
+                
                 current_state = move_group.get_current_state()
                 move_group.set_start_state(current_state)
-                move_group.set_pose_target(waypoint)
-                rospy.loginfo('moving to position '+str(n))
-                move_group.go()
-                is_goal_reached(move_group, waypoint, tolerance)
-                move_group.clear_pose_target(eef)       
-            
+
+                if boundary_conditions == None:
+                    move_group.set_pose_target(waypoint)
+                    rospy.loginfo('moving to position '+str(n))
+                    move_group.go()
+                    is_goal_reached(move_group, waypoint, tolerance)
+                    # loop_count_publisher.publish(n_rounds)
+                    move_group.clear_pose_target(eef)
+
+                elif boundary_conditions == 'mvms_mean':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_mean_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_mean_final'], tolerance)
+
+                elif boundary_conditions == 'mvms_std':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mvms_std_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mvms_std_final'], tolerance)
+
+                elif boundary_conditions == 'mtc':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mtc_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mtc_final'], tolerance)
+
+                elif boundary_conditions == 'mjm':
+                    move_group.set_joint_value_target(routes['wheel_house_left_jp']['mjm_final'])
+                    move_group.go()
+                    is_goal_reached(move_group, routes['wheel_house_left_jp']['mjm_final'], tolerance)
+
             else:
                 # every other point in cycle
                 current_state = move_group.get_current_state()
@@ -351,7 +529,16 @@ def move(route):
                 move_group.go()
                 is_goal_reached(move_group, waypoint, tolerance)
                 move_group.clear_pose_target(eef)
-                
+    else:
+        # complete cycle with joint positions
+        for n, position in enumerate(routes[route]):
+            current_state = move_group.get_current_state()
+            move_group.set_start_state(current_state)
+            rospy.loginfo('moving to position '+str(n))
+            move_group.go(position, wait=False)
+            is_goal_reached(move_group, position, tolerance)
+            loop_count_publisher.publish(n_rounds)
+
 
 
 # MAIN LOOP THAT CALLS THE FUNCTIONS
@@ -359,21 +546,30 @@ def move(route):
 n_rounds = std_msgs.msg.UInt64()
 
 def run_main():
-
-    # move_group.set_max_velocity_scaling_factor(1.0)
+    # service call to set_smart_servo_limits instead of move_group scaling factor
+    scaling_factor = 0.1
+    move_group.set_max_velocity_scaling_factor(scaling_factor)
+    move_group.set_max_acceleration_scaling_factor(scaling_factor)
     n_rounds.data = 0
     rospy.loginfo('Main function started')
-    route = 'wheel_house_left'
+    # route = 'wheel_house_left'
+    route = 'wheel_house_left_manual'
+    #bc = 'mjm'
+    bc = None
 
     while not rospy.is_shutdown():
         
+        
         # continue
         rospy.loginfo('Starting main loop. Route '+route+'. Round '+str(n_rounds.data))
-        move(route)
+        move(route, bc)
         n_rounds.data += 1
+        
+
 
 
 
 rospy.loginfo('objects in scene: '+str(scene.get_known_object_names()))
 if 'model_y_rear_axle' in scene.get_known_object_names():
     run_main()
+
