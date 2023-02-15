@@ -78,9 +78,14 @@ Status API Training Shop Blog About
 *.kdev_include_paths
 *.orig
 
+# large local project files
+
 iiwa_tesla/iiwa_tesla_publish/src/1487454-03-B_neu.stp
 iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu.stl
 iiwa_tesla/iiwa_tesla_publish/src/tesla_part_solo-1487454-03-B_neu (Meshed)002.stl
 
 iiwa_tesla/iiwa_tesla_data/*
 !iiwa_tesla/iiwa_tesla_data/joint_pos_vel_data.ipynb
+
+# DS_Store
+.DS_Store
